@@ -354,9 +354,9 @@ def init_admin_user():
         print(f"Erro ao criar usuário admin: {e}")
         raise  # Propaga o erro para poder ser visto
 
-@app.get('/up')
+@app.route('/up')
 def health_check():
-    return {"status": "OK"}
+    return "<html><body><h1>Hello World!</h1></body></html>", 200
 
 
 # Configurar o agendador para limpar logs diariamente
