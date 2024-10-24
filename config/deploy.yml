@@ -37,11 +37,6 @@ builder:
   arch: amd64
 
 env:
-  clear:
-    DB_HOST: postgres
-    POSTGRES_USER: postgres
-    DB_PORT: "5432"
-    POSTGRES_DB: cloacker
   secret:
     - POSTGRES_PASSWORD
 

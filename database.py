@@ -9,13 +9,9 @@ import random
 import string
 import bcrypt
 
-DB_USER = os.getenv('POSTGRES_USER', 'postgres')
 DB_PASSWORD = os.getenv('POSTGRES_PASSWORD')
-DB_HOST = os.getenv('DB_HOST', 'postgres')
-DB_PORT = os.getenv('DB_PORT', '5432')
-DB_NAME = os.getenv('POSTGRES_DB', 'cloacker')
 
-DATABASE_URL = f"postgres://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL = f"postgres://postgres:{DB_PASSWORD}@localhost:5432/cloacker"
 
 def generate_access_code():
     digits = ''.join(random.choices(string.digits, k=4))
