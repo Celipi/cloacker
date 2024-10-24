@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, render_template, make_response, request, redirect, url_for, session, flash, jsonify, abort
+from flask import Flask, render_template, make_response, request, redirect, url_for, session, flash, jsonify, abort, Response
 from functools import wraps
 from database import (init_db, add_link, get_link, get_all_links, update_password, 
                       add_traffic_log, get_traffic_logs, get_total_accesses, 
@@ -356,7 +356,7 @@ def init_admin_user():
 
 @app.route('/up')
 def health_check():
-    return "<html><body><h1>Hello World!</h1></body></html>", 200
+    return Response("OK", status=200)
 
 
 # Configurar o agendador para limpar logs diariamente
