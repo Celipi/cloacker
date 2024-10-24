@@ -10,7 +10,7 @@ import string
 import bcrypt
 
 DB_PASSWORD = os.getenv('POSTGRES_PASSWORD')
-DATABASE_URL = f"postgres://postgres:{DB_PASSWORD}@postgres:5432/cloacker-postgres"
+DATABASE_URL = f"postgres://postgres:{DB_PASSWORD}@db:5432/cloacker"
 
 def generate_access_code():
     digits = ''.join(random.choices(string.digits, k=4))

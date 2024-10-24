@@ -21,8 +21,6 @@ proxy:
   host: cloacker.evosync.com.br
   # kamal-proxy connects to your container over port 80, use `app_port` to specify a different port.
   app_port: 3000
-  healthcheck:
-    timeout: 60 
 
 # Credentials for your image host.
 registry:
@@ -50,7 +48,7 @@ accessories:
     env:
       clear:
         POSTGRES_USER: postgres
-        POSTGRES_DB: cloacker-postgres
+        POSTGRES_DB: cloacker
       secret:
         - POSTGRES_PASSWORD
     files:
