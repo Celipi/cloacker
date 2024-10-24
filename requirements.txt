@@ -5,3 +5,4 @@ user-agents
 bcrypt
 apscheduler
 pytz
+requests
