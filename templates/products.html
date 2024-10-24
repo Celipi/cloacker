@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produtos - CloakOpen</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .sidebar-link:hover .material-icons { color: #4A5568; }
+    </style>
+</head>
+<body class="bg-gray-100 flex font-sans">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-lg h-screen fixed left-0 top-0">
+        <div class="p-6 border-b">
+            <h2 class="text-2xl font-bold text-gray-800">CloakOpen</h2>
+        </div>
+        <nav class="flex flex-col p-4 space-y-3">
+            <a href="{{ url_for('admin_panel') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">dashboard</span>
+                <span class="ml-3">Dashboard</span>
+            </a>
+            <a href="{{ url_for('view_links') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">link</span>
+                <span class="ml-3">Links Criados</span>
+            </a>
+            <a href="{{ url_for('view_products') }}" class="sidebar-link flex items-center p-3 text-gray-800 bg-gray-200 rounded-lg">
+                <span class="material-icons text-gray-600">inventory</span>
+                <span class="ml-3">Produtos</span>
+            </a>
+            <a href="{{ url_for('view_logs') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">description</span>
+                <span class="ml-3">Logs</span>
+            </a>
+            <a href="{{ url_for('view_users') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">people</span>
+                <span class="ml-3">Usuários</span>
+            </a>
+            <a href="https://docs.cloackercelio.com" target="_blank" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">library_books</span>
+                <span class="ml-3">Documentação</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">logout</span>
+                <span class="ml-3">Logout</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-64 flex-1 p-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Produtos</h1>
+            <button class="bg-black text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200" onclick="openModal()">+ Adicionar Produto</button>
+        </div>
+
+        <!-- Products Table -->
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="productsTableBody">
+                    <!-- Products will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Modal for adding/editing product -->
+    <div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800" id="modalTitle">Adicionar Produto</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                <div class="mb-6">
+                    <label for="productName" class="block text-sm font-medium text-gray-700 mb-2">Nome do Produto</label>
+                    <input type="text" id="productName" name="name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" required>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" class="px-4 py-2 text-gray-600 hover:text-gray-800" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="bg-black text-white px-6 py-2 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200" id="submitBtn">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(product = null) {
+            const modal = document.getElementById('productModal');
+            const form = document.getElementById('productForm');
+            const title = document.getElementById('modalTitle');
+            const nameInput = document.getElementById('productName');
+            const idInput = document.getElementById('productId');
+
+            if (product) {
+                title.textContent = 'Editar Produto';
+                nameInput.value = product.name;
+                idInput.value = product.id;
+            } else {
+                title.textContent = 'Adicionar Produto';
+                form.reset();
+                idInput.value = '';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('productModal').classList.add('hidden');
+        }
+
+        function loadProducts() {
+            fetch('/api/products')
+                .then(response => response.json())
+                .then(products => {
+                    const tableBody = document.getElementById('productsTableBody');
+                    tableBody.innerHTML = '';
+                    products.forEach(product => {
+                        const row = `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">${product.id}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${product.name}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <button onclick='openModal(${JSON.stringify(product)})' class="text-blue-600 hover:text-blue-900">Editar</button>
+                                    <button onclick="deleteProduct(${product.id})" class="ml-2 text-red-600 hover:text-red-900">Excluir</button>
+                                </td>
+                            </tr>
+                        `;
+                        tableBody.innerHTML += row;
+                    });
+                });
+        }
+
+        function deleteProduct(id) {
+            if (confirm('Tem certeza que deseja excluir este produto?')) {
+                fetch(`/api/products/${id}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            loadProducts();
+                        } else {
+                            alert('Erro ao excluir o produto.');
+                        }
+                    });
+            }
+        }
+
+        document.getElementById('productForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const productId = document.getElementById('productId').value;
+            const url = productId ? `/api/products/${productId}` : '/api/products';
+            const method = productId ? 'PUT' : 'POST';
+
+            fetch(url, { method, body: formData })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        closeModal();
+                        loadProducts();
+                    } else {
+                        alert('Erro ao salvar o produto.');
+                    }
+                });
+        });
+
+        document.addEventListener('DOMContentLoaded', loadProducts);
+    </script>
+</body>
+</html>

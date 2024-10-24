@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuários - CloakOpen</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .sidebar-link:hover .material-icons { color: #4A5568; }
+    </style>
+</head>
+<body class="bg-gray-100 flex font-sans">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-lg h-screen fixed left-0 top-0">
+        <div class="p-6 border-b">
+            <h2 class="text-2xl font-bold text-gray-800">CloakOpen</h2>
+        </div>
+        <nav class="flex flex-col p-4 space-y-3">
+            <a href="{{ url_for('admin_panel') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">dashboard</span>
+                <span class="ml-3">Dashboard</span>
+            </a>
+            <a href="{{ url_for('view_links') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">link</span>
+                <span class="ml-3">Links Criados</span>
+            </a>
+            <a href="{{ url_for('view_products') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">inventory</span>
+                <span class="ml-3">Produtos</span>
+            </a>
+            <a href="{{ url_for('view_logs') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">description</span>
+                <span class="ml-3">Logs</span>
+            </a>
+            <a href="{{ url_for('view_users') }}" class="sidebar-link flex items-center p-3 text-gray-800 bg-gray-200 rounded-lg">
+                <span class="material-icons text-gray-600">people</span>
+                <span class="ml-3">Usuários</span>
+            </a>
+            <a href="https://docs.cloackercelio.com" target="_blank" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">library_books</span>
+                <span class="ml-3">Documentação</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">logout</span>
+                <span class="ml-3">Logout</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-64 flex-1 p-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Usuários</h1>
+            <button class="bg-black text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200" onclick="openAddUserModal()">+ Adicionar Usuário</button>
+        </div>
+
+        <!-- Users Table -->
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome de Usuário</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="usersTableBody">
+                    <!-- Users will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Modal for adding user -->
+    <div id="addUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Adicionar Usuário</h2>
+                <button onclick="closeAddUserModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <form id="addUserForm">
+                <div class="mb-6">
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Nome de Usuário</label>
+                    <input type="text" id="username" name="username" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                    <input type="password" id="password" name="password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" required>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" class="px-4 py-2 text-gray-600 hover:text-gray-800" onclick="closeAddUserModal()">Cancelar</button>
+                    <button type="submit" class="bg-black text-white px-6 py-2 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for changing password -->
+    <div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Alterar Senha</h2>
+                <button onclick="closeChangePasswordModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <form id="changePasswordForm">
+                <input type="hidden" id="changePasswordUserId">
+                <div class="mb-6">
+                    <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">Nova Senha</label>
+                    <input type="password" id="newPassword" name="newPassword" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" required>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" class="px-4 py-2 text-gray-600 hover:text-gray-800" onclick="closeChangePasswordModal()">Cancelar</button>
+                    <button type="submit" class="bg-black text-white px-6 py-2 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Function to load users
+        function loadUsers() {
+            fetch('/api/users')
+                .then(response => response.json())
+                .then(users => {
+                    const tableBody = document.getElementById('usersTableBody');
+                    tableBody.innerHTML = '';
+                    users.forEach(user => {
+                        const row = `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">${user.id}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${user.username}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <button onclick="openChangePasswordModal(${user.id})" class="text-indigo-600 hover:text-indigo-900 mr-2">Alterar Senha</button>
+                                    ${user.username !== 'admin' ? `<button onclick="deleteUser(${user.id})" class="text-red-600 hover:text-red-900">Excluir</button>` : ''}
+                                </td>
+                            </tr>
+                        `;
+                        tableBody.innerHTML += row;
+                    });
+                });
+        }
+
+        // Function to open add user modal
+        function openAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('hidden');
+        }
+
+        // Function to close add user modal
+        function closeAddUserModal() {
+            document.getElementById('addUserModal').classList.add('hidden');
+        }
+
+        // Function to open change password modal
+        function openChangePasswordModal(userId) {
+            document.getElementById('changePasswordUserId').value = userId;
+            document.getElementById('changePasswordModal').classList.remove('hidden');
+        }
+
+        // Function to close change password modal
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('hidden');
+        }
+
+        // Function to delete user
+        function deleteUser(userId) {
+            if (confirm('Tem certeza que deseja excluir este usuário?')) {
+                fetch(`/api/users/${userId}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            loadUsers();
+                            alert('Usuário excluído com sucesso');
+                        } else {
+                            alert('Erro ao excluir usuário');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Erro ao excluir usuário');
+                    });
+            }
+        }
+
+        // Event listener for add user form
+        document.getElementById('addUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadUsers();
+                        closeAddUserModal();
+                        alert('Usuário adicionado com sucesso');
+                    } else {
+                        alert('Erro ao adicionar usuário');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro ao adicionar usuário');
+                });
+        });
+
+        // Function to close add user modal
+        function closeAddUserModal() {
+            document.getElementById('addUserModal').classList.add('hidden');
+            document.getElementById('addUserForm').reset();
+        }
+
+        // Event listener for change password form
+        document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const userId = document.getElementById('changePasswordUserId').value;
+            const newPassword = document.getElementById('newPassword').value;
+            fetch(`/api/users/${userId}/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ newPassword }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        closeChangePasswordModal();
+                        alert('Senha alterada com sucesso');
+                    } else {
+                        alert('Erro ao alterar senha');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro ao alterar senha');
+                });
+        });
+
+        // Load users when the page loads
+        loadUsers();
+    </script>
+</body>
+</html>

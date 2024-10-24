@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CloakOpen</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        .loading.hidden { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .sidebar-link:hover .material-icons { color: #4A5568; }
+    </style>
+</head>
+<body class="bg-gray-100 flex font-sans">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-lg h-screen fixed left-0 top-0">
+        <div class="p-6 border-b">
+            <h2 class="text-2xl font-bold text-gray-800">CloakOpen</h2>
+        </div>
+        <nav class="flex flex-col p-4 space-y-3">
+            <a href="{{ url_for('admin_panel') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">dashboard</span>
+                <span class="ml-3">Dashboard</span>
+            </a>
+            <a href="{{ url_for('view_links') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">link</span>
+                <span class="ml-3">Links Criados</span>
+            </a>
+            <a href="{{ url_for('view_products') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">inventory</span>
+                <span class="ml-3">Produtos</span>
+            </a>
+            <a href="{{ url_for('view_logs') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">description</span>
+                <span class="ml-3">Logs</span>
+            </a>
+            <a href="{{ url_for('view_users') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">people</span>
+                <span class="ml-3">Usuários</span>
+            </a>
+            <a href="https://docs.cloackercelio.com" target="_blank" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">library_books</span>
+                <span class="ml-3">Documentação</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">logout</span>
+                <span class="ml-3">Logout</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-64 flex-1 p-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
+            <button class="bg-black text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200" onclick="openModal()">+ Adicionar Filtragem</button>
+        </div>
+
+        <!-- Filtros -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <!-- Container principal com layout responsivo -->
+            <div class="space-y-6">
+                <!-- Primeira linha: Filtro de data -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Data Inicial</label>
+                        <input type="date" id="startDate" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Data Final</label>
+                        <input type="date" id="endDate" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                    </div>
+                </div>
+
+                <!-- Segunda linha: Outros filtros -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Product Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Produto</label>
+                        <select id="filterProduct" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Link Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Link</label>
+                        <select id="filterLink" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Country Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">País</label>
+                        <select id="filterCountry" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Device Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Dispositivo</label>
+                        <select id="filterDevice" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                            <option value="">Todos</option>
+                            <option value="mobile">Mobile</option>
+                            <option value="desktop">Desktop</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Terceira linha: Botão de aplicar -->
+                <div class="flex justify-end">
+                    <button onclick="applyFilters()" class="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors duration-200 flex items-center space-x-2">
+                        <span>Aplicar Filtros</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold text-gray-600 mb-2">Total de Acessos</h2>
+                <p class="text-4xl font-bold text-gray-800" id="total-accesses">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold text-gray-600 mb-2">Bloqueados</h2>
+                <p class="text-4xl font-bold text-red-500" id="blocked-accesses">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold text-gray-600 mb-2">Aprovados</h2>
+                <p class="text-4xl font-bold text-green-500" id="approved-accesses">0</p>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Acessos por Hora (Últimas 24 horas)</h2>
+            <canvas id="hourlyChart" style="max-height: 450px;"></canvas>
+        </div>
+    </main>
+
+    <!-- Modal de Adição de Filtragem -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">Adicionar Nova Filtragem</h2>
+            <form id="addLinkForm">
+                <div class="mb-4">
+                    <label for="offer_url" class="block text-sm font-medium text-gray-700">Offer URL</label>
+                    <input type="url" id="offer_url" name="offer_url" class="w-full p-3 border border-gray-300 rounded-lg mt-1 focus:ring-2 focus:ring-black focus:border-transparent" required>
+                </div>
+                <div class="mb-4">
+                    <label for="safe_url" class="block text-sm font-medium text-gray-700">Safe URL</label>
+                    <input type="url" id="safe_url" name="safe_url" class="w-full p-3 border border-gray-300 rounded-lg mt-1 focus:ring-2 focus:ring-black focus:border-transparent" required>
+                </div>
+                <div class="mb-4">
+                    <label for="device_filter" class="block text-sm font-medium text-gray-700">Filtro de Dispositivo</label>
+                    <select id="device_filter" name="device_filter" class="w-full p-3 border border-gray-300 rounded-lg mt-1 focus:ring-2 focus:ring-black focus:border-transparent" required>
+                        <option value="all">Todos os dispositivos</option>
+                        <option value="mobile_only">Apenas mobile</option>
+                        <option value="desktop_only">Apenas desktop</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="country_filter" class="block text-sm font-medium text-gray-700">Filtro de País (Exclusão)</label>
+                    <select id="country_filter" name="country_filter" class="w-full p-3 border border-gray-300 rounded-lg mt-1 focus:ring-2 focus:ring-black focus:border-transparent" required>
+                        <option value="all">Nenhum</option>
+                        <option value="BR">Brasil</option>
+                        <option value="US">Estados Unidos</option>
+                    </select>
+                </div>
+                <div class="mb-6">
+                    <label for="product_id" class="block text-sm font-medium text-gray-700">Produto</label>
+                    <select id="product_id" name="product_id" class="w-full p-3 border border-gray-300 rounded-lg mt-1 focus:ring-2 focus:ring-black focus:border-transparent">
+                        <option value="">Nenhum</option>
+                        <!-- Opções de produtos serão adicionadas dinamicamente aqui -->
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" class="px-4 py-2 text-gray-600 hover:text-gray-800" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="bg-black text-white px-6 py-2 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200" id="submitBtn">
+                        Salvar Filtragem
+                        <span class="loading hidden"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para exibir o link criado -->
+    <div id="linkModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">Link Criado com Sucesso</h2>
+            <div class="mb-4">
+                <label for="createdLink" class="block text-sm font-medium text-gray-700">Link Criado:</label>
+                <input type="text" id="createdLink" class="w-full p-3 border border-gray-300 rounded-lg mt-1 cursor-pointer bg-gray-100" readonly>
+            </div>
+            <div class="mb-6">
+                <label for="accessCode" class="block text-sm font-medium text-gray-700">Código de Acesso:</label>
+                <input type="text" id="accessCode" class="w-full p-3 border border-gray-300 rounded-lg mt-1 cursor-pointer bg-gray-100" readonly>
+            </div>
+            <button type="button" class="w-full bg-black text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200" onclick="closeLinkModal()">Fechar</button>
+        </div>
+    </div>
+
+    <script>
+        function loadProducts() {
+           fetch('/api/products')
+               .then(response => response.json())
+               .then(products => {
+                   const productSelect = document.getElementById('product_id');
+                   // Limpar todas as opções existentes, exceto a primeira (Nenhum)
+                   while (productSelect.options.length > 1) {
+                       productSelect.remove(1);
+                   }
+                   // Adicionar as novas opções
+                   products.forEach(product => {
+                       const option = document.createElement('option');
+                       option.value = product.id;
+                       option.textContent = product.name;
+                       productSelect.appendChild(option);
+                   });
+               });
+       }
+
+       function openModal() {
+           document.getElementById('modal').classList.remove('hidden');
+           loadProducts()
+       }
+
+       function closeModal() {
+           document.getElementById('modal').classList.add('hidden');
+       }
+
+       function openLinkModal(link, accessCode) {
+           document.getElementById('createdLink').value = link;
+           document.getElementById('accessCode').value = accessCode;
+           document.getElementById('linkModal').classList.remove('hidden');
+       }
+
+       function closeLinkModal() {
+           document.getElementById('linkModal').classList.add('hidden');
+       }
+
+       function copyToClipboard(elementId) {
+           var element = document.getElementById(elementId);
+           element.select();
+           document.execCommand('copy');
+           alert('Copiado para a área de transferência!');
+       }
+
+       document.getElementById('addLinkForm').addEventListener('submit', function(e) {
+           e.preventDefault();
+           var formData = new FormData(this);
+           var submitBtn = document.getElementById('submitBtn');
+           var loadingSpinner = submitBtn.querySelector('.loading');
+           
+           submitBtn.disabled = true;
+           loadingSpinner.classList.remove('hidden');
+           
+           // Se nenhum produto for selecionado, defina product_id como uma string vazia
+           if (!formData.get('product_id')) {
+               formData.set('product_id', '');
+           }
+           
+           fetch("{{ url_for('add_new_link') }}", {
+               method: 'POST',
+               body: formData
+           })
+           .then(response => response.json())
+           .then(data => {
+               submitBtn.disabled = false;
+               loadingSpinner.classList.add('hidden');
+               closeModal();
+               var fullLink = window.location.origin + '/' + data.short_id;
+               openLinkModal(fullLink, '&access_code=' + data.access_code);
+           })
+           .catch(error => {
+               console.error('Error:', error);
+               submitBtn.disabled = false;
+               loadingSpinner.classList.add('hidden');
+               alert('Ocorreu um erro ao adicionar o link. Por favor, tente novamente.');
+           });
+       });
+
+       document.getElementById('createdLink').addEventListener('click', function() {
+           copyToClipboard('createdLink');
+       });
+
+       document.getElementById('accessCode').addEventListener('click', function() {
+           copyToClipboard('accessCode');
+       });
+
+       let chart = null
+
+       function loadFilterOptions() {
+            // Carregar produtos
+            fetch('/api/products')
+                .then(response => response.json())
+                .then(products => {
+                    const productSelect = document.getElementById('filterProduct');
+                    products.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.textContent = product.name;
+                        productSelect.appendChild(option);
+                    });
+                });
+
+            // Carregar países únicos
+            fetch('/api/countries')
+                .then(response => response.json())
+                .then(countries => {
+                    const countrySelect = document.getElementById('filterCountry');
+                    countries.forEach(country => {
+                        const option = document.createElement('option');
+                        option.value = country.code;
+                        option.textContent = country.name;
+                        countrySelect.appendChild(option);
+                    });
+                });
+
+            // Carregar links
+            loadLinks();
+        }
+
+        function loadLinks(productId = '') {
+            const url = productId ? `/api/links?product_id=${productId}` : '/api/links';
+            fetch(url)
+                .then(response => response.json())
+                .then(links => {
+                    const linkSelect = document.getElementById('filterLink');
+                    // Limpar opções existentes exceto a primeira
+                    while (linkSelect.options.length > 1) {
+                        linkSelect.remove(1);
+                    }
+                    links.forEach(link => {
+                        const option = document.createElement('option');
+                        option.value = link.short_id;
+                        option.textContent = link.short_id;
+                        linkSelect.appendChild(option);
+                    });
+                });
+        }
+
+        // Atualizar links quando um produto for selecionado
+        document.getElementById('filterProduct').addEventListener('change', function(e) {
+            loadLinks(e.target.value);
+        });
+
+        function applyFilters() {
+            const filters = {
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value,
+                product_id: document.getElementById('filterProduct').value,
+                short_id: document.getElementById('filterLink').value,
+                country: document.getElementById('filterCountry').value,
+                device: document.getElementById('filterDevice').value
+            };
+
+            // Atualizar dados com filtros
+            loadData(filters);
+        }
+
+        function loadData(filters = {}) {
+            const queryString = new URLSearchParams(filters).toString();
+
+            // Atualizar contadores
+            fetch(`/api/total_accesses?${queryString}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-accesses').textContent = data.total_accesses;
+                });
+
+            fetch(`/api/blocked_accesses?${queryString}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('blocked-accesses').textContent = data.blocked_accesses;
+                });
+
+            fetch(`/api/approved_accesses?${queryString}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('approved-accesses').textContent = data.approved_accesses;
+                });
+
+            // Atualizar gráfico
+            fetch(`/api/hourly_accesses?${queryString}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateChart(data.hourly_accesses);
+                });
+        }
+
+        function updateChart(data) {
+            const ctx = document.getElementById('hourlyChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item.hour),
+                    datasets: [{
+                        label: 'Acessos por Hora',
+                        data: data.map(item => item.count),
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Função para formatar a data no formato YYYY-MM-DD
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        // Função para inicializar as datas
+        function initializeDateInputs() {
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            const startDate = document.getElementById('startDate');
+            const endDate = document.getElementById('endDate');
+
+            // Definir valores máximos e mínimos
+            startDate.max = formatDate(today);
+            startDate.min = formatDate(thirtyDaysAgo);
+            endDate.max = formatDate(today);
+            endDate.min = formatDate(thirtyDaysAgo);
+
+            // Definir valores iniciais
+            startDate.value = formatDate(thirtyDaysAgo);
+            endDate.value = formatDate(today);
+
+            // Adicionar event listeners para controlar a lógica das datas
+            startDate.addEventListener('change', function() {
+                const start = new Date(this.value);
+                const end = new Date(endDate.value);
+
+                // Se a data final for menor que a inicial, ajustar a data final
+                if (end < start) {
+                    endDate.value = this.value;
+                }
+            });
+
+            endDate.addEventListener('change', function() {
+                const start = new Date(startDate.value);
+                const end = new Date(this.value);
+
+                // Se a data inicial for maior que a final, ajustar a data inicial
+                if (start > end) {
+                    startDate.value = this.value;
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFilterOptions();
+            loadData();
+            initializeDateInputs();
+        });
+   </script>
+</body>
+</html>

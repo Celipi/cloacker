@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tudo certo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 90%;
+        }
+        .icon {
+            font-size: 4rem;
+            color: #4CAF50;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        p {
+            color: #666;
+            margin-bottom: 1.5rem;
+            font-weight: 300;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #f0f0f0;
+            border-radius: 20px;
+            height: 10px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.5s ease-in-out;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        .btn:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        footer {
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        footer a {
+            color: #4CAF50;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        footer a:hover {
+            color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <i class="fas fa-check-circle icon"></i>
+        <h1>Tudo certo!</h1>
+        <p>Aguarde enquanto verificamos sua solicitação.</p>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <a href="{{ safe_url }}" class="btn" id="continueBtn">Continuar</a>
+    </div>
+    <footer>
+        Feito por <a href="https://cloakopen.com" target="_blank">CloakOpen</a>
+    </footer>
+
+    <script>
+        const progressBar = document.getElementById('progressBar');
+        const continueBtn = document.getElementById('continueBtn');
+        let progress = 0;
+
+        const interval = setInterval(() => {
+            progress += 1;
+            progressBar.style.width = `${progress}%`;
+
+            if (progress >= 100) {
+                clearInterval(interval);
+                continueBtn.style.opacity = '1';
+                continueBtn.style.transform = 'scale(1)';
+            }
+        }, 30);
+    </script>
+</body>
+</html>

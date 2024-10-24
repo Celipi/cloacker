@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: wldigital
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+         test: ["CMD-SHELL", "pg_isready -U postgres"]
+         interval: 5s
+         timeout: 5s
+         retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" 
+    networks:
+      - traefik_proxy
+
+  web:
+    image: ghcr.io/celipi/member_area:latest
+    environment:
+       DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db:5432/wldigital
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - traefik_proxy
+
+volumes:
+  postgres_data:

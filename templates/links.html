@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Links Criados - CloakOpen</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        .loading.hidden { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .sidebar-link:hover .material-icons { color: #4A5568; }
+    </style>
+</head>
+<body class="bg-gray-100 flex font-sans">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-lg h-screen fixed left-0 top-0">
+        <div class="p-6 border-b">
+            <h2 class="text-2xl font-bold text-gray-800">CloakOpen</h2>
+        </div>
+        <nav class="flex flex-col p-4 space-y-3">
+            <a href="{{ url_for('admin_panel') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">dashboard</span>
+                <span class="ml-3">Dashboard</span>
+            </a>
+            <a href="{{ url_for('view_links') }}" class="sidebar-link flex items-center p-3 text-gray-800 bg-gray-200 rounded-lg">
+                <span class="material-icons text-gray-600">link</span>
+                <span class="ml-3">Links Criados</span>
+            </a>
+            <a href="{{ url_for('view_products') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">inventory</span>
+                <span class="ml-3">Produtos</span>
+            </a>
+            <a href="{{ url_for('view_logs') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">description</span>
+                <span class="ml-3">Logs</span>
+            </a>
+            <a href="{{ url_for('view_users') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">people</span>
+                <span class="ml-3">Usuários</span>
+            </a>
+            <a href="https://docs.cloackercelio.com" target="_blank" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">library_books</span>
+                <span class="ml-3">Documentação</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">logout</span>
+                <span class="ml-3">Logout</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-64 flex-1 p-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Links Criados</h1>
+            <button class="bg-black text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200" onclick="openModal()">+ Adicionar Filtragem</button>
+        </div>
+
+        <div class="mb-6">
+            <label for="productFilter" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Produto:</label>
+            <select id="productFilter" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-black focus:border-transparent">
+                <option value="">Todos os Produtos</option>
+                <!-- Opções de produtos serão adicionadas dinamicamente aqui -->
+            </select>
+        </div>
+        
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <table id="linksTable" class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Short ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Offer URL</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Safe URL</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Filtro de Dispositivo</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Filtro de País</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for link in links %}
+                    <tr data-product-id="{{ link.product_id or '' }}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ link.short_id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ link.offer_url }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ link.safe_url }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ link.device_filter }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ link.country_filter }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="showLinkDetails('{{ link.short_id }}')" class="text-green-600 hover:text-green-900 mr-2">Detalhes</button>
+                            <button onclick="editLink('{{ link.short_id }}')" class="text-indigo-600 hover:text-indigo-900 mr-2">Editar</button>
+                            <button onclick="deleteLink('{{ link.short_id }}')" class="text-red-600 hover:text-red-900">Excluir</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Modal para Adicionar/Editar Link -->
+    <div id="linkModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800" id="modalTitle">Adicionar Nova Filtragem</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <form id="linkForm">
+                <input type="hidden" id="linkId" name="id">
+                <div class="mb-4">
+                    <label for="offer_url" class="block text-sm font-medium text-gray-700">Offer URL</label>
+                    <input type="url" id="offer_url" name="offer_url" class="w-full p-3 border border-gray-300 rounded-lg mt-1 focus:ring-2 focus:ring-black focus:border-transparent">
+                </div>
+                <div class="mb-4">
+                    <label for="safe_url" class="block text-sm font-medium text-gray-700">Safe URL</label>
+                    <input type="url" id="safe_url" name="safe_url" class="w-full p-3 border border-gray-300 rounded-lg mt-1 focus:ring-2 focus:ring-black focus:border-transparent">
+                </div>
+                <div class="mb-4">
+                    <label for="device_filter" class="block text-sm font-medium text-gray-700">Filtro de Dispositivo</label>
+                    <select id="device_filter" name="device_filter" class="w-full p-3 border border-gray-300 rounded-lg mt-1 focus:ring-2 focus:ring-black focus:border-transparent">
+                        <option value="all">Todos os dispositivos</option>
+                        <option value="mobile_only">Apenas mobile</option>
+                        <option value="desktop_only">Apenas desktop</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="country_filter" class="block text-sm font-medium text-gray-700">Filtro de País (Exclusão)</label>
+                    <select id="country_filter" name="country_filter" class="w-full p-3 border border-gray-300 rounded-lg mt-1 focus:ring-2 focus:ring-black focus:border-transparent">
+                        <option value="all">Nenhum</option>
+                        <option value="BR">Brasil</option>
+                        <option value="US">Estados Unidos</option>
+                    </select>
+                </div>
+                <div class="mb-6">
+                    <label for="product_id" class="block text-sm font-medium text-gray-700">Produto</label>
+                    <select id="product_id" name="product_id" class="w-full p-3 border border-gray-300 rounded-lg mt-1 focus:ring-2 focus:ring-black focus:border-transparent">
+                        <option value="">Nenhum</option>
+                        <!-- Opções de produtos serão adicionadas dinamicamente aqui -->
+                    </select>
+                </div>
+                <button type="submit" id="submitBtn" class="w-full bg-black text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200 flex items-center justify-center">
+                    Salvar
+                    <span class="loading hidden ml-2"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para exibir detalhes do link -->
+    <div id="linkDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">Detalhes do Link</h3>
+                <button onclick="closeLinkDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Link Completo:</label>
+                <input type="text" id="fullLink" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Código de Acesso:</label>
+                <input type="text" id="accessCode" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+            </div>
+            <button onclick="copyLinkDetails()" class="w-full bg-black text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200">
+                Copiar Detalhes
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function loadProducts() {
+            fetch('/api/products')
+                .then(response => response.json())
+                .then(products => {
+                    const productSelect = document.getElementById('productFilter');
+                    const modalProductSelect = document.getElementById('product_id');
+                    
+                    // Limpar todas as opções existentes, exceto a primeira
+                    while (productSelect.options.length > 1) {
+                        productSelect.remove(1);
+                    }
+                    while (modalProductSelect.options.length > 1) {
+                        modalProductSelect.remove(1);
+                    }
+                    
+                    // Adicionar as novas opções
+                    products.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.textContent = product.name;
+                        productSelect.appendChild(option.cloneNode(true));
+                        modalProductSelect.appendChild(option);
+                    });
+                });
+        }
+
+        function filterLinks() {
+            const productId = document.getElementById('productFilter').value;
+            const rows = document.querySelectorAll('#linksTable tbody tr');
+            
+            rows.forEach(row => {
+                const rowProductId = row.getAttribute('data-product-id');
+                if (productId === '' || rowProductId === productId) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function openModal(shortId = null) {
+        const modal = document.getElementById('linkModal');
+        const form = document.getElementById('linkForm');
+        const title = document.getElementById('modalTitle');
+
+        loadProducts();
+
+        if (shortId) {
+            title.textContent = 'Editar Filtragem';
+            fetch(`/api/link/${shortId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('linkId').value = data.short_id;
+                    document.getElementById('offer_url').value = data.offer_url;
+                    document.getElementById('safe_url').value = data.safe_url;
+                    document.getElementById('device_filter').value = data.device_filter;
+                    document.getElementById('country_filter').value = data.country_filter;
+                });
+        } else {
+            title.textContent = 'Adicionar Nova Filtragem';
+            form.reset();
+            document.getElementById('linkId').value = '';
+        }
+
+        modal.classList.remove('hidden');
+    }
+    
+        function closeModal() {
+            document.getElementById('linkModal').classList.add('hidden');
+        }
+    
+        function editLink(shortId) {
+            openModal(shortId);
+        }
+    
+        function showLinkDetails(shortId) {
+            fetch(`/api/link/${shortId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const fullLink = `${window.location.origin}/${shortId}`;
+                    document.getElementById('fullLink').value = fullLink;
+                    document.getElementById('accessCode').value = `&access_code=${data.access_code}`;
+                    document.getElementById('linkDetailsModal').classList.remove('hidden');
+                });
+        }
+    
+        function closeLinkDetailsModal() {
+            document.getElementById('linkDetailsModal').classList.add('hidden');
+        }
+    
+        function copyLinkDetails() {
+            const fullLink = document.getElementById('fullLink').value;
+            const accessCode = document.getElementById('accessCode').value;
+            const textToCopy = `${fullLink}?${accessCode}`;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert('Link completo copiado para a área de transferência');
+            }, (err) => {
+                console.error('Erro ao copiar: ', err);
+            });
+        }
+    
+        function deleteLink(shortId) {
+            if (confirm('Tem certeza que deseja excluir este link?')) {
+                fetch(`/api/link/${shortId}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Link excluído com sucesso');
+                            location.reload(); // Recarrega a página para atualizar a lista
+                        } else {
+                            alert('Erro ao excluir o link');
+                        }
+                    });
+            }
+        }
+    
+        document.getElementById('linkForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const shortId = document.getElementById('linkId').value;
+            const method = shortId ? 'PUT' : 'POST';
+            const url = shortId ? `/api/link/${shortId}` : '/add_link';
+
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingSpinner = submitBtn.querySelector('.loading');
+            
+            submitBtn.disabled = true;
+            loadingSpinner.classList.remove('hidden');
+
+            // Se nenhum produto for selecionado, defina product_id como uma string vazia
+            if (!formData.get('product_id')) {
+                formData.set('product_id', '');
+            }
+
+            fetch(url, {
+                method: method,
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                submitBtn.disabled = false;
+                loadingSpinner.classList.add('hidden');
+                if (data.success) {
+                    closeModal();
+                    if (!shortId) {
+                        // Se for um novo link, mostra o modal de detalhes
+                        showLinkDetails(data.short_id);
+                    } else {
+                        alert('Link atualizado com sucesso');
+                        location.reload(); // Recarrega a página para atualizar a lista
+                    }
+                } else {
+                    alert('Erro ao salvar o link');
+                }
+            })
+            .catch(error => {
+                submitBtn.disabled = false;
+                loadingSpinner.classList.add('hidden');
+                console.error('Error:', error);
+                alert('Ocorreu um erro ao processar a solicitação');
+            });
+        });
+    
+        // Adicione este evento para garantir que o modal seja fechado quando clicar fora dele
+        window.onclick = function(event) {
+            const modal = document.getElementById('linkModal');
+            const detailsModal = document.getElementById('linkDetailsModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+            if (event.target == detailsModal) {
+                closeLinkDetailsModal();
+            }
+        }
+    
+        // Função para inicializar os eventos após o carregamento do DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProducts();
+            document.getElementById('productFilter').addEventListener('change', filterLinks);
+            const addButton = document.querySelector('button[onclick="openModal()"]');
+            if (addButton) {
+                addButton.addEventListener('click', function() {
+                    openModal();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
