@@ -354,6 +354,11 @@ def init_admin_user():
         print(f"Erro ao criar usuário admin: {e}")
         raise  # Propaga o erro para poder ser visto
 
+@app.get('/up')
+def health_check():
+    return {"status": "OK"}
+
+
 # Configurar o agendador para limpar logs diariamente
 scheduler = BackgroundScheduler(timezone=timezone('America/Sao_Paulo'))
 scheduler.add_job(scheduled_log_cleanup, 'interval', days=30)
@@ -364,6 +369,3 @@ if __name__ == '__main__':
     init_admin_user()
     app.run(debug=True, port=3000)
 
-@app.get('/up')
-def health_check():
-    return {"status": "OK"}
