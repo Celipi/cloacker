@@ -50,7 +50,7 @@
                 <span class="material-icons text-gray-400">people</span>
                 <span class="ml-3">Usuários</span>
             </a>
-            <a href="https://docs.cloackercelio.com" target="_blank" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+            <a href="https://docs.cloakopen.com" target="_blank" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
                 <span class="material-icons text-gray-400">library_books</span>
                 <span class="ml-3">Documentação</span>
             </a>
@@ -151,8 +151,8 @@
 
         <!-- Chart -->
         <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Acessos por Hora (Últimas 24 horas)</h2>
-            <canvas id="hourlyChart" style="max-height: 450px;"></canvas>
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Gráfico de Acessos</h2>
+            <canvas id="hourlyChart" style="max-height: 400px;"></canvas>
         </div>
     </main>
 
@@ -415,13 +415,25 @@
                 chart.destroy();
             }
 
+            // Formatar as datas para o timezone de São Paulo
+            const formattedData = data.map(item => ({
+                hour: new Date(item.hour).toLocaleString('pt-BR', {
+                    timeZone: 'America/Sao_Paulo',
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+                count: item.count
+            }));
+
             chart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.map(item => item.hour),
+                    labels: formattedData.map(item => item.hour),
                     datasets: [{
-                        label: 'Acessos por Hora',
-                        data: data.map(item => item.count),
+                        label: 'Acessos',
+                        data: formattedData.map(item => item.count),
                         borderColor: 'rgb(75, 192, 192)',
                         tension: 0.1
                     }]

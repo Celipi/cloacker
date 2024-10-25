@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, render_template, make_response, request, redirect, url_for, session, flash, jsonify, abort, Response
+from flask import Flask, render_template, make_response, request, redirect, url_for, session, flash, jsonify, abort
 from functools import wraps
 from database import (init_db, add_link, get_link, get_all_links, update_password, 
                       add_traffic_log, get_traffic_logs, get_total_accesses, 
@@ -118,7 +118,7 @@ def redirect_link(short_id):
         passed_filter = False
     
     # Verificar filtro de país
-    if link['country_filter'] != 'all' and country_code != link['country_filter']:
+    if link['country_filter'] != 'all' and country_code == link['country_filter']:
         passed_filter = False
     
     # Verificar código de acesso
@@ -358,7 +358,6 @@ def init_admin_user():
 def health_check():
     return "OK", 200
 
-
 # Configurar o agendador para limpar logs diariamente
 scheduler = BackgroundScheduler(timezone=timezone('America/Sao_Paulo'))
 scheduler.add_job(scheduled_log_cleanup, 'interval', days=30)
@@ -368,4 +367,3 @@ if __name__ == '__main__':
     init_db()
     init_admin_user()
     app.run(debug=True, host='0.0.0.0', port=3000)
-

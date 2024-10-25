@@ -57,7 +57,7 @@ def init_db():
             country_code TEXT,
             device_type TEXT NOT NULL,
             passed_filter BOOLEAN NOT NULL,
-            timestamp TIMESTAMP NOT NULL
+            timestamp TIMESTAMPTZ NOT NULL
         )
     """)
     
@@ -97,9 +97,14 @@ def create_login_table():
 def add_traffic_log(short_id, ip_address, user_agent, country_code, device_type, passed_filter):
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
+    
+    # Usar timezone São Paulo
+    sp_timezone = timezone('America/Sao_Paulo')
+    current_time = datetime.now(sp_timezone)
+    
     cur.execute(
         "INSERT INTO traffic_logs (short_id, ip_address, user_agent, country_code, device_type, passed_filter, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-        (short_id, ip_address, user_agent, country_code, device_type, passed_filter, datetime.now())
+        (short_id, ip_address, user_agent, country_code, device_type, passed_filter, current_time)
     )
     conn.commit()
     cur.close()
@@ -108,10 +113,25 @@ def add_traffic_log(short_id, ip_address, user_agent, country_code, device_type,
 def get_traffic_logs(limit=100):
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
-    cur.execute("SELECT * FROM traffic_logs ORDER BY timestamp DESC LIMIT %s", (limit,))
+    cur.execute("""
+        SELECT 
+            id, 
+            short_id, 
+            ip_address, 
+            user_agent, 
+            country_code, 
+            device_type, 
+            passed_filter, 
+            timestamp AT TIME ZONE 'America/Sao_Paulo' as timestamp
+        FROM traffic_logs 
+        ORDER BY timestamp DESC 
+        LIMIT %s
+    """, (limit,))
     logs = cur.fetchall()
     cur.close()
     conn.close()
+    
+    # Formatar o timestamp diretamente aqui
     return [
         {
             'id': log[0],
@@ -121,7 +141,7 @@ def get_traffic_logs(limit=100):
             'country_code': log[4],
             'device_type': log[5],
             'passed_filter': log[6],
-            'timestamp': log[7]
+            'timestamp': log[7].strftime('%d/%m/%Y %H:%M')  # Formatação feita aqui
         }
         for log in logs
     ]
@@ -236,15 +256,13 @@ def get_filtered_accesses(filters=None, passed_filter=None):
 
         if filters:
             if filters.get('start_date'):
-                conditions.append("timestamp >= %s")
-                # Adiciona 00:00:00 à data inicial
-                start_date = f"{filters['start_date']} 00:00:00"
+                conditions.append("timestamp >= %s::timestamptz")
+                start_date = f"{filters['start_date']} 00:00:00 America/Sao_Paulo"
                 params.append(start_date)
             
             if filters.get('end_date'):
-                conditions.append("timestamp <= %s")
-                # Adiciona 23:59:59 à data final
-                end_date = f"{filters['end_date']} 23:59:59"
+                conditions.append("timestamp <= %s::timestamptz")
+                end_date = f"{filters['end_date']} 23:59:59 America/Sao_Paulo"
                 params.append(end_date)
             
             if filters.get('product_id'):
@@ -287,7 +305,7 @@ def get_hourly_accesses(filters=None):
     try:
         query = """
             SELECT 
-                date_trunc('hour', timestamp) as hour,
+                date_trunc('hour', timestamp AT TIME ZONE 'America/Sao_Paulo') as hour,
                 COUNT(*) as count
             FROM traffic_logs
         """
@@ -296,15 +314,13 @@ def get_hourly_accesses(filters=None):
 
         if filters:
             if filters.get('start_date'):
-                conditions.append("timestamp >= %s")
-                # Adiciona 00:00:00 à data inicial
-                start_date = f"{filters['start_date']} 00:00:00"
+                conditions.append("timestamp >= %s::timestamptz")
+                start_date = f"{filters['start_date']} 00:00:00 America/Sao_Paulo"
                 params.append(start_date)
             
             if filters.get('end_date'):
-                conditions.append("timestamp <= %s")
-                # Adiciona 23:59:59 à data final
-                end_date = f"{filters['end_date']} 23:59:59"
+                conditions.append("timestamp <= %s::timestamptz")
+                end_date = f"{filters['end_date']} 23:59:59 America/Sao_Paulo"
                 params.append(end_date)
             
             if filters.get('product_id'):
@@ -334,7 +350,7 @@ def get_hourly_accesses(filters=None):
 
         query += """
             GROUP BY hour
-            ORDER BY hour DESC
+            ORDER BY hour ASC
         """
 
         cur.execute(query, params)
@@ -533,7 +549,8 @@ def clear_old_logs():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     
-    thirty_days_ago = datetime.now() - timedelta(days=30)
+    sp_timezone = timezone('America/Sao_Paulo')
+    thirty_days_ago = datetime.now(sp_timezone) - timedelta(days=30)
     
     cur.execute("DELETE FROM traffic_logs WHERE timestamp < %s", (thirty_days_ago,))
     
