@@ -367,5 +367,5 @@ scheduler.start()
 if __name__ == '__main__':
     init_db()
     init_admin_user()
-    app.run(debug=True, host='0.0.0.0', port=3000)
+    app.run(debug=True, port=3000)
 

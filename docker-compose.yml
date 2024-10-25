@@ -1,8 +1,29 @@
 services:
+  traefik:
+    image: traefik:v3.0 
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=felipe@gmail.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443" 
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro 
+      - ./letsencrypt:/letsencrypt 
+    networks:
+      - traefik_proxy
+
   db:
     image: postgres:17
     environment:
-      POSTGRES_DB: wldigital
+      POSTGRES_DB: cloacker
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     healthcheck:
@@ -13,19 +34,34 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432" 
+      - 5432 
     networks:
       - traefik_proxy
 
   web:
-    image: ghcr.io/celipi/member_area:latest
+    build: ./app
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=Host(`cloacker.evosync.com.br`)"
+      - "traefik.http.routers.web.entrypoints=web,websecure"
+      - "traefik.http.routers.web.tls=true"
+      - "traefik.http.routers.web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.web.loadbalancer.server.port=3000"
     environment:
        DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db:5432/wldigital
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - uploads_data:/app/static/uploads
     networks:
       - traefik_proxy
 
 volumes:
   postgres_data:
+  letsencrypt:
+  uploads_data:
+
+networks:
+  traefik_proxy:
+    external: true
