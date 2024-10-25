@@ -1,5 +1,4 @@
 # database.py
-import os
 import psycopg2
 from psycopg2 import sql
 import shortuuid
@@ -72,6 +71,28 @@ def init_db():
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS ab_tests (
+            id SERIAL PRIMARY KEY,
+            test_id TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            device_filter TEXT NOT NULL,
+            country_filter TEXT NOT NULL,
+            access_code TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    """)
+    
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS ab_test_urls (
+            id SERIAL PRIMARY KEY,
+            test_id TEXT REFERENCES ab_tests(test_id) ON DELETE CASCADE,
+            url TEXT NOT NULL,
+            visits INTEGER DEFAULT 0,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
     """)
     
@@ -621,6 +642,153 @@ def get_links_by_product(product_id=None):
     except Exception as e:
         print(f"Error getting links: {e}")
         return []
+    finally:
+        cur.close()
+        conn.close()
+
+def create_ab_test(name, device_filter, country_filter, urls):
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    try:
+        test_id = shortuuid.uuid()[:8]
+        access_code = generate_access_code()
+        
+        # Criar o teste
+        cur.execute("""
+            INSERT INTO ab_tests (test_id, name, device_filter, country_filter, access_code)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING test_id
+        """, (test_id, name, device_filter, country_filter, access_code))
+        
+        # Adicionar URLs
+        for url in urls:
+            if url.strip():  # Verificar se a URL não está vazia
+                cur.execute("""
+                    INSERT INTO ab_test_urls (test_id, url, visits)
+                    VALUES (%s, %s, 0)
+                """, (test_id, url))
+        
+        conn.commit()
+        return test_id, access_code
+    except Exception as e:
+        conn.rollback()
+        print(f"Error creating AB test: {e}")
+        return None, None
+    finally:
+        cur.close()
+        conn.close()
+
+def get_ab_test(test_id):
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT test_id, name, device_filter, country_filter, access_code 
+            FROM ab_tests 
+            WHERE test_id = %s
+        """, (test_id,))
+        test = cur.fetchone()
+        
+        if test:
+            cur.execute("""
+                SELECT url, visits 
+                FROM ab_test_urls 
+                WHERE test_id = %s
+                ORDER BY id
+            """, (test_id,))
+            urls = cur.fetchall()
+            
+            return {
+                'test_id': test[0],
+                'name': test[1],
+                'device_filter': test[2],
+                'country_filter': test[3],
+                'access_code': test[4],
+                'urls': [{'url': url[0], 'visits': url[1]} for url in urls]
+            }
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def increment_ab_test_visit(test_id, url):
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            UPDATE ab_test_urls 
+            SET visits = visits + 1
+            WHERE test_id = %s AND url = %s
+        """, (test_id, url))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"Error incrementing visit: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+def get_all_ab_tests():
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT test_id, name, device_filter, country_filter, access_code 
+            FROM ab_tests 
+            ORDER BY created_at DESC
+        """)
+        tests = cur.fetchall()
+        
+        result = []
+        for test in tests:
+            cur.execute("""
+                SELECT url, visits 
+                FROM ab_test_urls 
+                WHERE test_id = %s
+                ORDER BY id
+            """, (test[0],))
+            urls = cur.fetchall()
+            
+            total_visits = sum(url[1] for url in urls)
+            urls_with_stats = [
+                {
+                    'url': url[0],
+                    'visits': url[1],
+                    'percentage': round((url[1] / total_visits * 100) if total_visits > 0 else 0, 2)
+                }
+                for url in urls
+            ]
+            
+            result.append({
+                'test_id': test[0],
+                'name': test[1],
+                'device_filter': test[2],
+                'country_filter': test[3],
+                'access_code': test[4],
+                'urls': urls_with_stats
+            })
+        
+        return result
+    finally:
+        cur.close()
+        conn.close()
+
+def delete_ab_test(test_id):
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    try:
+        # Primeiro deletar as URLs associadas
+        cur.execute("DELETE FROM ab_test_urls WHERE test_id = %s", (test_id,))
+        # Depois deletar o teste
+        cur.execute("DELETE FROM ab_tests WHERE test_id = %s", (test_id,))
+        
+        success = cur.rowcount > 0
+        conn.commit()
+        return success
+    except Exception as e:
+        conn.rollback()
+        print(f"Error deleting AB test: {e}")
+        return False
     finally:
         cur.close()
         conn.close()

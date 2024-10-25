@@ -5,12 +5,14 @@ from database import (init_db, add_link, get_link, get_all_links, update_passwor
                       add_traffic_log, get_traffic_logs, get_total_accesses, 
                       get_blocked_accesses, get_approved_accesses, get_hourly_accesses,
                       clear_old_logs, delete_link, update_link, get_all_products,
-                      add_product, get_product, update_product, delete_product, get_all_links_with_products, add_user, get_user, update_user_password, get_all_users, delete_user,get_unique_countries,get_links_by_product,get_filtered_accesses)
+                      add_product, get_product, update_product, delete_product, get_all_links_with_products, add_user, get_user, update_user_password, get_all_users, delete_user,get_unique_countries,get_links_by_product, get_filtered_accesses,  create_ab_test, get_ab_test, get_all_ab_tests, 
+                      increment_ab_test_visit, delete_ab_test)
 import user_agents
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import timezone
 import bcrypt
+import random
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'  # Substitua por uma chave secreta real
@@ -92,13 +94,132 @@ def add_new_link():
         'access_code': access_code
     }), 200
 
+@app.route('/ab-test')
+@login_required
+def ab_test_page():
+    return render_template('test_ab.html')
+
+@app.route('/api/ab-test', methods=['POST'])
+@login_required
+def create_ab_test_api():
+    try:
+        name = request.form['test_name']
+        device_filter = request.form['device_filter']
+        country_filter = request.form['country_filter']
+        urls = request.form.getlist('urls[]')
+        
+        # Validações
+        if not name or not device_filter or not country_filter:
+            return jsonify({'success': False, 'error': 'Todos os campos são obrigatórios'})
+        
+        if len(urls) < 2 or len(urls) > 5:
+            return jsonify({'success': False, 'error': 'O teste deve ter entre 2 e 5 URLs'})
+        
+        # Criar o teste
+        test_id, access_code = create_ab_test(name, device_filter, country_filter, urls)
+        
+        if test_id:
+            return jsonify({
+                'success': True,
+                'test_id': test_id,
+                'access_code': access_code
+            })
+        return jsonify({'success': False, 'error': 'Erro ao criar teste'})
+    except Exception as e:
+        print(f"Error creating AB test: {e}")
+        return jsonify({'success': False, 'error': 'Erro interno do servidor'})
+    
+@app.route('/api/ab-test/<test_id>', methods=['GET'])
+@login_required
+def get_ab_test_api(test_id):
+    try:
+        test = get_ab_test(test_id)
+        if test:
+            return jsonify(test)
+        return jsonify({'error': 'Teste não encontrado'}), 404
+    except Exception as e:
+        print(f"Error getting AB test: {e}")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
+    
+@app.route('/api/ab-test/<test_id>', methods=['DELETE'])
+@login_required
+def delete_ab_test_api(test_id):
+    try:
+        success = delete_ab_test(test_id)
+        return jsonify({'success': success})
+    except Exception as e:
+        print(f"Error deleting AB test: {e}")
+        return jsonify({'success': False, 'error': 'Erro interno do servidor'})
+
+@app.route('/api/ab-tests', methods=['GET'])
+@login_required
+def get_ab_tests_api():
+    try:
+        tests = get_all_ab_tests()
+        return jsonify(tests)
+    except Exception as e:
+        print(f"Error getting AB tests: {e}")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
+
 @app.route('/<short_id>')
 def redirect_link(short_id):
+    # Primeiro, tentar encontrar um teste A/B
+    ab_test = get_ab_test(short_id)
+    if ab_test:
+        # Verificar se o cookie existe para teste A/B
+        cookie_name = f'cloakopen_ab_{short_id}'
+        if request.cookies.get(cookie_name) == 'true':
+            stored_url = request.cookies.get(f'chosen_url_{short_id}')
+            if stored_url:
+                return redirect(stored_url)
+
+        ip = get_client_ip()
+        user_agent = request.headers.get('User-Agent')
+        is_mobile = user_agents.parse(user_agent).is_mobile
+        device_type = 'mobile' if is_mobile else 'desktop'
+        country_code = get_country_code(ip)
+        access_code = request.args.get('access_code')
+        
+        passed_filter = True
+        
+        # Verificar filtro de dispositivo para teste A/B
+        if (ab_test['device_filter'] == 'mobile_only' and not is_mobile) or \
+           (ab_test['device_filter'] == 'desktop_only' and is_mobile):
+            passed_filter = False
+        
+        # Verificar filtro de país para teste A/B
+        if ab_test['country_filter'] != 'all' and country_code != ab_test['country_filter']:
+            passed_filter = False
+        
+        # Verificar código de acesso para teste A/B
+        if access_code != ab_test['access_code']:
+            passed_filter = False
+        
+        # Registrar o log para teste A/B
+        add_traffic_log(short_id, ip, user_agent, country_code, device_type, passed_filter)
+        
+        if passed_filter:
+            # Escolher URL aleatoriamente
+            urls = [url['url'] for url in ab_test['urls']]
+            chosen_url = random.choice(urls)
+            
+            # Incrementar contador
+            increment_ab_test_visit(short_id, chosen_url)
+            
+            # Criar resposta com cookies
+            response = make_response(redirect(chosen_url))
+            response.set_cookie(cookie_name, 'true', max_age=30*24*60*60)  # Cookie válido por 30 dias
+            response.set_cookie(f'chosen_url_{short_id}', chosen_url, max_age=30*24*60*60)
+            return response
+        else:
+            return render_template('block.html')
+
+    # Se não for teste A/B, continuar com a lógica de links normais
     link = get_link(short_id)
     if not link:
         abort(404)  # Link não encontrado
 
-    # Verificar se o cookie existe
+    # Verificar se o cookie existe para link normal
     cookie_name = f'cloakopen_{short_id}'
     if request.cookies.get(cookie_name) == 'true':
         return redirect(link['offer_url'])

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste A/B - CloakOpen</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        .loading.hidden { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .sidebar-link:hover .material-icons { color: #4A5568; }
+    </style>
+</head>
+<body class="bg-gray-100 flex font-sans">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-lg h-screen fixed left-0 top-0">
+        <div class="p-6 border-b">
+            <h2 class="text-2xl font-bold text-gray-800">CloakOpen</h2>
+        </div>
+        <nav class="flex flex-col p-4 space-y-3">
+            <a href="{{ url_for('admin_panel') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">dashboard</span>
+                <span class="ml-3">Dashboard</span>
+            </a>
+            <a href="{{ url_for('view_links') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">link</span>
+                <span class="ml-3">Links Criados</span>
+            </a>
+            <a href="{{ url_for('ab_test_page') }}" class="sidebar-link flex items-center p-3 text-gray-800 bg-gray-200 rounded-lg">
+                <span class="material-icons text-gray-400">compare_arrows</span>
+                <span class="ml-3">Teste A/B</span>
+            </a>
+            <a href="{{ url_for('view_products') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">format_list_bulleted_add</span>
+                <span class="ml-3">Produtos</span>
+            </a>
+            <a href="{{ url_for('view_logs') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">history</span>
+                <span class="ml-3">Logs</span>
+            </a>
+            <a href="{{ url_for('view_users') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">people</span>
+                <span class="ml-3">Usuários</span>
+            </a>
+            <a href="https://docs.cloakopen.com" target="_blank" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">library_books</span>
+                <span class="ml-3">Documentação</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">logout</span>
+                <span class="ml-3">Logout</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-64 flex-1 p-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Teste A/B</h1>
+            <button onclick="openCreateModal()" class="bg-black text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200">
+                + Novo Teste A/B
+            </button>
+        </div>
+
+        <div class="mb-6">
+            <div class="relative">
+                <input type="text" 
+                       id="searchInput" 
+                       placeholder="Buscar por ID ou nome do teste..." 
+                       class="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                <span class="material-icons absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">search</span>
+            </div>
+        </div>
+
+        <!-- Lista de Testes Ativos -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Testes A/B Ativos</h2>
+            <div id="activeTests" class="space-y-6">
+                <!-- Testes serão carregados aqui via JavaScript -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Criação -->
+    <div id="createModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 overflow-y-auto">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md my-8 mx-auto max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Novo Teste A/B</h2>
+                <button onclick="closeCreateModal()" class="text-gray-500 hover:text-gray-700">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+
+            <form id="abTestForm" class="space-y-6">
+                <!-- Campos do formulário mantidos, apenas estilização atualizada -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Teste</label>
+                    <input type="text" name="test_name" required
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                </div>
+
+                                <!-- Continuação do formulário no Modal de Criação -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Filtro de Dispositivo</label>
+                                    <select name="device_filter" required
+                                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                                        <option value="all">Todos os dispositivos</option>
+                                        <option value="mobile_only">Apenas mobile</option>
+                                        <option value="desktop_only">Apenas desktop</option>
+                                    </select>
+                                </div>
+                
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Filtro de País</label>
+                                    <select name="country_filter" required
+                                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                                        <option value="all">Todos</option>
+                                        <!-- Países serão adicionados via JavaScript -->
+                                    </select>
+                                </div>
+                
+                                <div id="urlInputs" class="space-y-4">
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">URL 1</label>
+                                        <input type="url" name="urls[]" required
+                                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">URL 2</label>
+                                        <input type="url" name="urls[]" required
+                                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                                    </div>
+                                </div>
+                
+                                <button type="button" id="addUrlBtn" class="text-gray-600 hover:text-gray-800 flex items-center">
+                                    <span class="material-icons mr-1">add_circle</span>
+                                    Adicionar URL
+                                </button>
+                
+                                <div class="flex justify-end space-x-3">
+                                    <button type="button" class="px-4 py-2 text-gray-600 hover:text-gray-800" onclick="closeCreateModal()">Cancelar</button>
+                                    <button type="submit" class="bg-black text-white px-6 py-2 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200" id="submitBtn">
+                                        Criar Teste A/B
+                                        <span class="loading hidden"></span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                
+                    <!-- Modal para exibir o link criado -->
+                    <div id="linkModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50">
+                        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+                            <h2 class="text-2xl font-bold mb-6 text-gray-800">Teste A/B Criado com Sucesso</h2>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Link do Teste:</label>
+                                <input type="text" id="testLink" class="w-full p-3 border border-gray-300 rounded-lg cursor-pointer bg-gray-100" readonly>
+                            </div>
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Código de Acesso:</label>
+                                <input type="text" id="accessCode" class="w-full p-3 border border-gray-300 rounded-lg cursor-pointer bg-gray-100" readonly>
+                            </div>
+                            <button type="button" class="w-full bg-black text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200" onclick="closeLinkModal()">Fechar</button>
+                        </div>
+                    </div>
+                
+                    <!-- Modal de Detalhes -->
+                    <div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50">
+                        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-2xl font-bold text-gray-800">Detalhes do Teste A/B</h2>
+                                <button onclick="closeDetailsModal()" class="text-gray-500 hover:text-gray-700">
+                                    <span class="material-icons">close</span>
+                                </button>
+                            </div>
+                            <div id="testDetails" class="space-y-4">
+                                <!-- Detalhes serão preenchidos via JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                
+    <script>
+        function openCreateModal() {
+            const modal = document.getElementById('createModal');
+            modal.classList.remove('hidden');
+        }
+
+        function closeCreateModal() {
+            const modal = document.getElementById('createModal');
+            modal.classList.add('hidden');
+            // Resetar o formulário
+            document.getElementById('abTestForm').reset();
+            // Resetar o contador de URLs
+            urlCount = 2;
+            // Limpar URLs adicionais
+            const urlInputs = document.getElementById('urlInputs');
+            while (urlInputs.children.length > 2) {
+                urlInputs.removeChild(urlInputs.lastChild);
+            }
+            document.getElementById('addUrlBtn').style.display = 'flex';
+        }
+
+        function openDetailsModal(testId) {
+            fetch(`/api/ab-test/${testId}`)
+                .then(response => response.json())
+                .then(test => {
+                    document.getElementById('testDetails').innerHTML = `
+                        <div class="space-y-4">
+                            <div>
+                                <h3 class="font-medium text-gray-700">Link do Teste</h3>
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" value="${window.location.origin}/${test.test_id}" 
+                                        class="flex-1 p-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                                    <button onclick="copyToClipboard('${window.location.origin}/${test.test_id}')" 
+                                            class="text-gray-600 hover:text-gray-800">
+                                        <span class="material-icons">content_copy</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-700">Código de Acesso</h3>
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" value="&access_code=${test.access_code}" 
+                                        class="flex-1 p-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                                    <button onclick="copyToClipboard('&access_code=${test.access_code}')" 
+                                            class="text-gray-600 hover:text-gray-800">
+                                        <span class="material-icons">content_copy</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-700">Filtros</h3>
+                                <p class="text-gray-600">Dispositivo: ${test.device_filter}</p>
+                                <p class="text-gray-600">País: ${test.country_filter}</p>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-700">Estatísticas</h3>
+                                ${test.urls.map(url => `
+                                    <div class="mt-2">
+                                        <p class="text-sm text-gray-600">${url.url}</p>
+                                        <p class="text-sm text-gray-600">Visitas: ${url.visits || 0}${url.percentage ? ` (${url.percentage}%)` : ''}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+            const modal = document.getElementById('detailsModal');
+            modal.classList.remove('hidden');
+        }
+
+        function closeDetailsModal() {
+            const modal = document.getElementById('detailsModal');
+            modal.classList.add('hidden');
+        }
+
+        function openLinkModal(link, accessCode) {
+            document.getElementById('testLink').value = link;
+            document.getElementById('accessCode').value = `&access_code=${accessCode}`;
+            document.getElementById('linkModal').classList.remove('hidden');
+        }
+
+        function closeLinkModal() {
+            document.getElementById('linkModal').classList.add('hidden');
+        }
+
+        // Função para copiar para a área de transferência
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Criar e mostrar toast de sucesso
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-4 right-4 bg-black text-white px-6 py-3 rounded-lg shadow-lg transition-opacity duration-300';
+                toast.textContent = 'Copiado para a área de transferência!';
+                document.body.appendChild(toast);
+                
+                // Remover toast após 3 segundos
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => {
+                        document.body.removeChild(toast);
+                    }, 300);
+                }, 3000);
+            });
+        }
+
+        // Função para deletar teste
+        function deleteTest(testId) {
+            if (confirm('Tem certeza que deseja excluir este teste A/B?')) {
+                fetch(`/api/ab-test/${testId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadActiveTests();
+                        // Mostrar toast de sucesso
+                        const toast = document.createElement('div');
+                        toast.className = 'fixed bottom-4 right-4 bg-black text-white px-6 py-3 rounded-lg shadow-lg transition-opacity duration-300';
+                        toast.textContent = 'Teste excluído com sucesso!';
+                        document.body.appendChild(toast);
+                        
+                        setTimeout(() => {
+                            toast.style.opacity = '0';
+                            setTimeout(() => {
+                                document.body.removeChild(toast);
+                            }, 300);
+                        }, 3000);
+                    }
+                });
+            }
+        }
+
+        // Função para carregar testes ativos
+        function loadActiveTests() {
+            fetch('/api/ab-tests')
+                .then(response => response.json())
+                .then(tests => {
+                    const testsDiv = document.getElementById('activeTests');
+                    testsDiv.innerHTML = tests.map(test => `
+                        <div class="bg-white p-6 rounded-lg shadow-md mb-4">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-lg font-medium text-gray-900">${test.name}</h3>
+                                    <p class="text-sm text-gray-500">ID: ${test.test_id}</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="openDetailsModal('${test.test_id}')" 
+                                            class="text-gray-600 hover:text-gray-800">
+                                        <span class="material-icons">info</span>
+                                    </button>
+                                    <button onclick="deleteTest('${test.test_id}')" 
+                                            class="text-red-600 hover:text-red-800">
+                                        <span class="material-icons">delete</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                ${test.urls.map(url => `
+                                    <div>
+                                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                            <span>${url.url}</span>
+                                            <span>${url.visits} visitas (${url.percentage}%)</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-black h-2 rounded-full" style="width: ${url.percentage}%"></div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('');
+                });
+        }
+
+        // Inicialização quando o DOM estiver carregado
+        document.addEventListener('DOMContentLoaded', function() {
+            let urlCount = 2;
+            const maxUrls = 5;
+            
+            // Adicionar evento para o botão de adicionar URL
+            document.getElementById('addUrlBtn').addEventListener('click', function() {
+                if (urlCount < maxUrls) {
+                    urlCount++;
+                    const urlDiv = document.createElement('div');
+                    urlDiv.className = 'mb-4';
+                    urlDiv.innerHTML = `
+                        <label class="block text-sm font-medium text-gray-700 mb-2">URL ${urlCount}</label>
+                        <input type="url" name="urls[]" required
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                    `;
+                    document.getElementById('urlInputs').appendChild(urlDiv);
+                    
+                    if (urlCount === maxUrls) {
+                        this.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Adicionar evento para o formulário
+            document.getElementById('abTestForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const loadingSpinner = submitBtn.querySelector('.loading');
+                
+                submitBtn.disabled = true;
+                loadingSpinner.classList.remove('hidden');
+                
+                fetch('/api/ab-test', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        closeCreateModal();
+                        loadActiveTests();
+                        openLinkModal(
+                            `${window.location.origin}/${data.test_id}`,
+                            data.access_code
+                        );
+                    }
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    loadingSpinner.classList.add('hidden');
+                });
+            });
+
+            function filterTests(searchTerm) {
+                const testsContainer = document.getElementById('activeTests');
+                const testCards = testsContainer.getElementsByClassName('bg-white');
+                
+                Array.from(testCards).forEach(card => {
+                    const testName = card.querySelector('h3').textContent.toLowerCase();
+                    const testId = card.querySelector('p').textContent.toLowerCase();
+                    const searchLower = searchTerm.toLowerCase();
+                    
+                    if (testName.includes(searchLower) || testId.includes(searchLower)) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+
+            // Adicione este evento no DOMContentLoaded
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                filterTests(e.target.value);
+            });
+            
+            // Carregar testes ativos inicialmente
+            loadActiveTests();
+        });
+    </script>
+</body>
+</html>
