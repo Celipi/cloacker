@@ -106,17 +106,18 @@ def create_ab_test_api():
         name = request.form['test_name']
         device_filter = request.form['device_filter']
         country_filter = request.form['country_filter']
+        safe_url = request.form['safe_url']  # Nova linha
         urls = request.form.getlist('urls[]')
         
         # Validações
-        if not name or not device_filter or not country_filter:
+        if not name or not device_filter or not country_filter or not safe_url:
             return jsonify({'success': False, 'error': 'Todos os campos são obrigatórios'})
         
         if len(urls) < 2 or len(urls) > 5:
             return jsonify({'success': False, 'error': 'O teste deve ter entre 2 e 5 URLs'})
         
         # Criar o teste
-        test_id, access_code = create_ab_test(name, device_filter, country_filter, urls)
+        test_id, access_code = create_ab_test(name, device_filter, country_filter, urls, safe_url)
         
         if test_id:
             return jsonify({
@@ -212,7 +213,7 @@ def redirect_link(short_id):
             response.set_cookie(f'chosen_url_{short_id}', chosen_url, max_age=30*24*60*60)
             return response
         else:
-            return render_template('block.html')
+            return render_template('block.html', safe_url=ab_test['safe_url'])
 
     # Se não for teste A/B, continuar com a lógica de links normais
     link = get_link(short_id)
@@ -420,7 +421,8 @@ def delete_product_api(product_id):
 @app.route('/users')
 @login_required
 def view_users():
-    return render_template('users.html')
+    current_username = session.get('username')
+    return render_template('users.html', current_username=current_username)
 
 @app.route('/api/users', methods=['GET'])
 @login_required

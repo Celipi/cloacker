@@ -1,5 +1,4 @@
 # database.py
-import os
 import psycopg2
 from psycopg2 import sql
 import shortuuid
@@ -83,6 +82,7 @@ def init_db():
             device_filter TEXT NOT NULL,
             country_filter TEXT NOT NULL,
             access_code TEXT NOT NULL,
+            safe_url TEXT NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
     """)
@@ -647,19 +647,19 @@ def get_links_by_product(product_id=None):
         cur.close()
         conn.close()
 
-def create_ab_test(name, device_filter, country_filter, urls):
+def create_ab_test(name, device_filter, country_filter, urls, safe_url):
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     try:
         test_id = shortuuid.uuid()[:8]
         access_code = generate_access_code()
         
-        # Criar o teste
+        # Criar o teste (adicionado safe_url)
         cur.execute("""
-            INSERT INTO ab_tests (test_id, name, device_filter, country_filter, access_code)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO ab_tests (test_id, name, device_filter, country_filter, access_code, safe_url)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING test_id
-        """, (test_id, name, device_filter, country_filter, access_code))
+        """, (test_id, name, device_filter, country_filter, access_code, safe_url))
         
         # Adicionar URLs
         for url in urls:
@@ -684,7 +684,7 @@ def get_ab_test(test_id):
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT test_id, name, device_filter, country_filter, access_code 
+            SELECT test_id, name, device_filter, country_filter, access_code, safe_url 
             FROM ab_tests 
             WHERE test_id = %s
         """, (test_id,))
@@ -705,6 +705,7 @@ def get_ab_test(test_id):
                 'device_filter': test[2],
                 'country_filter': test[3],
                 'access_code': test[4],
+                'safe_url': test[5],  # Adicionado safe_url
                 'urls': [{'url': url[0], 'visits': url[1]} for url in urls]
             }
         return None
@@ -734,7 +735,7 @@ def get_all_ab_tests():
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT test_id, name, device_filter, country_filter, access_code 
+            SELECT test_id, name, device_filter, country_filter, access_code, safe_url 
             FROM ab_tests 
             ORDER BY created_at DESC
         """)
@@ -766,6 +767,7 @@ def get_all_ab_tests():
                 'device_filter': test[2],
                 'country_filter': test[3],
                 'access_code': test[4],
+                'safe_url': test[5],  # Adicionado safe_url
                 'urls': urls_with_stats
             })
         

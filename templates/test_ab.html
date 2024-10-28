@@ -122,24 +122,40 @@
                                 </div>
                 
                                 <div class="mb-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Filtro de País</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Filtro de País (exclusão)</label>
                                     <select name="country_filter" required
                                             class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
-                                        <option value="all">Todos</option>
-                                        <!-- Países serão adicionados via JavaScript -->
+                                        <option value="all">Nenhum</option>
+                                        <option value="BR">Brasil</option>
+                                        <option value="US">Estados Unidos</option>
                                     </select>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Safe URL</label>
+                                    <input type="url" name="safe_url" required
+                                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                                           placeholder="https://exemplo.com">
                                 </div>
                 
                                 <div id="urlInputs" class="space-y-4">
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">URL 1</label>
-                                        <input type="url" name="urls[]" required
-                                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                                        <div class="flex items-center">
+                                            <div class="flex-grow">
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Offer URL 1</label>
+                                                <input type="url" name="urls[]" required
+                                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">URL 2</label>
-                                        <input type="url" name="urls[]" required
-                                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                                        <div class="flex items-center">
+                                            <div class="flex-grow">
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Offer URL 2</label>
+                                                <input type="url" name="urls[]" required
+                                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                 
@@ -191,6 +207,8 @@
                     </div>
                 
     <script>
+        let urlCount = 2;
+
         function openCreateModal() {
             const modal = document.getElementById('createModal');
             modal.classList.remove('hidden');
@@ -199,15 +217,29 @@
         function closeCreateModal() {
             const modal = document.getElementById('createModal');
             modal.classList.add('hidden');
+            
             // Resetar o formulário
             document.getElementById('abTestForm').reset();
-            // Resetar o contador de URLs
-            urlCount = 2;
-            // Limpar URLs adicionais
+            
+            // Limpar URLs adicionais e resetar contador
             const urlInputs = document.getElementById('urlInputs');
-            while (urlInputs.children.length > 2) {
-                urlInputs.removeChild(urlInputs.lastChild);
-            }
+            urlInputs.innerHTML = `
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Offer URL 1</label>
+                    <input type="url" name="urls[]" required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Offer URL 2</label>
+                    <input type="url" name="urls[]" required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                </div>
+            `;
+            
+            // Resetar o contador
+            urlCount = 2;
+            
+            // Mostrar o botão de adicionar URL
             document.getElementById('addUrlBtn').style.display = 'flex';
         }
 
@@ -242,7 +274,7 @@
                             <div>
                                 <h3 class="font-medium text-gray-700">Filtros</h3>
                                 <p class="text-gray-600">Dispositivo: ${test.device_filter}</p>
-                                <p class="text-gray-600">País: ${test.country_filter}</p>
+                                <p class="text-gray-600">País excluido: ${test.country_filter}</p>
                             </div>
                             <div>
                                 <h3 class="font-medium text-gray-700">Estatísticas</h3>
@@ -366,7 +398,6 @@
 
         // Inicialização quando o DOM estiver carregado
         document.addEventListener('DOMContentLoaded', function() {
-            let urlCount = 2;
             const maxUrls = 5;
             
             // Adicionar evento para o botão de adicionar URL
@@ -374,19 +405,47 @@
                 if (urlCount < maxUrls) {
                     urlCount++;
                     const urlDiv = document.createElement('div');
-                    urlDiv.className = 'mb-4';
+                    urlDiv.className = 'mb-4 relative';
                     urlDiv.innerHTML = `
-                        <label class="block text-sm font-medium text-gray-700 mb-2">URL ${urlCount}</label>
-                        <input type="url" name="urls[]" required
-                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                        <div class="flex items-center">
+                            <div class="flex-grow">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Offer URL ${urlCount}</label>
+                                <input type="url" name="urls[]" required
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                            </div>
+                            <button type="button" class="delete-url-btn ml-2 text-gray-400 hover:text-gray-600" style="margin-top: 24px;">
+                                <span class="material-icons">close</span>
+                            </button>
+                        </div>
                     `;
                     document.getElementById('urlInputs').appendChild(urlDiv);
+                    
+                    // Adicionar evento de exclusão
+                    urlDiv.querySelector('.delete-url-btn').addEventListener('click', function() {
+                        urlDiv.remove();
+                        urlCount--;
+                        document.getElementById('addUrlBtn').style.display = 'flex';
+                        // Reordenar as labels das URLs
+                        updateUrlLabels();
+                    });
                     
                     if (urlCount === maxUrls) {
                         this.style.display = 'none';
                     }
                 }
             });
+
+            // Função para atualizar as labels das URLs
+            function updateUrlLabels() {
+                const urlInputs = document.getElementById('urlInputs');
+                const urlDivs = urlInputs.children;
+                Array.from(urlDivs).forEach((div, index) => {
+                    const label = div.querySelector('label');
+                    if (label) {
+                        label.textContent = `Offer URL ${index + 1}`;
+                    }
+                });
+            }
             
             // Adicionar evento para o formulário
             document.getElementById('abTestForm').addEventListener('submit', function(e) {
