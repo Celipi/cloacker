@@ -39,7 +39,7 @@ services:
       - traefik_proxy
 
   web:
-    image: ghcr.io/celipi/cloacker:latest
+    build: .
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web.rule=Host(`seu_dominio.com`)"
