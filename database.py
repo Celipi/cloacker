@@ -9,6 +9,7 @@ import random
 import string
 import bcrypt
 import socket
+import dns.resolver
 
 DB_USER = os.getenv('POSTGRES_USER', 'postgres')
 DB_PASSWORD = os.getenv('POSTGRES_PASSWORD')
@@ -864,3 +865,21 @@ def delete_domain_from_db(domain):
         cur.close()
         conn.close()
     return success
+
+def verify_domain_pointing(domain, expected_ip_or_domain):
+    try:
+        # Tenta resolver o CNAME
+        answers = dns.resolver.resolve(domain, 'CNAME')
+        for rdata in answers:
+            if str(rdata.target).rstrip('.') == expected_ip_or_domain:
+                return True
+        
+        # Se não for CNAME, tenta resolver o A record
+        answers = dns.resolver.resolve(domain, 'A')
+        for rdata in answers:
+            if rdata.address == expected_ip_or_domain:
+                return True
+        
+        return False
+    except:
+        return False

@@ -6,7 +6,7 @@ from database import (init_db, add_link, get_link, get_all_links, update_passwor
                       get_blocked_accesses, get_approved_accesses, get_hourly_accesses,
                       clear_old_logs, delete_link, update_link, get_all_products,
                       add_product, get_product, update_product, delete_product, get_all_links_with_products, add_user, get_user, update_user_password, get_all_users, delete_user,get_unique_countries,get_links_by_product, get_filtered_accesses,  create_ab_test, get_ab_test, get_all_ab_tests, 
-                      increment_ab_test_visit, delete_ab_test, get_all_domains, add_domain_to_db, verify_domain_in_db, delete_domain_from_db)
+                      increment_ab_test_visit, delete_ab_test, get_all_domains, add_domain_to_db, verify_domain_in_db, delete_domain_from_db, verify_domain_pointing)
 import user_agents
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -486,8 +486,12 @@ def add_domain():
 @app.route('/api/domains/<domain>/verify', methods=['POST'])
 @login_required
 def verify_domain(domain):
-    success = verify_domain_in_db(domain)
-    return jsonify({'success': success})
+    expected_pointing = request.host
+    if verify_domain_pointing(domain, expected_pointing):
+        success = verify_domain_in_db(domain)
+        return jsonify({'success': success})
+    else:
+        return jsonify({'success': False, 'message': 'O domínio ainda não está apontando corretamente.'})
 
 @app.route('/api/domains/<domain>', methods=['DELETE'])
 @login_required
