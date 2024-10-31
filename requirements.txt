@@ -6,3 +6,4 @@ bcrypt
 apscheduler
 pytz
 dnspython
+requests
