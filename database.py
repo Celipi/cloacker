@@ -12,7 +12,7 @@ import socket
 import dns.resolver
 
 DB_USER = os.getenv('POSTGRES_USER', 'postgres')
-DB_PASSWORD = os.getenv('POSTGRES_PASSWORD')
+DB_PASSWORD = os.getenv('POSTGRES_PASSWORD', 'Extreme123')
 DB_HOST = os.getenv('POSTGRES_HOST', 'cloacker-db')
 DB_NAME = os.getenv('POSTGRES_DB', 'cloacker')
 DB_PORT = os.getenv('POSTGRES_PORT', '5432')
