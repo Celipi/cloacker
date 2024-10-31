@@ -6,7 +6,7 @@ from database import (init_db, add_link, get_link, get_all_links, update_passwor
                       get_blocked_accesses, get_approved_accesses, get_hourly_accesses,
                       clear_old_logs, delete_link, update_link, get_all_products,
                       add_product, get_product, update_product, delete_product, get_all_links_with_products, add_user, get_user, update_user_password, get_all_users, delete_user,get_unique_countries,get_links_by_product, get_filtered_accesses,  create_ab_test, get_ab_test, get_all_ab_tests, 
-                      increment_ab_test_visit, delete_ab_test)
+                      increment_ab_test_visit, delete_ab_test, get_all_domains, add_domain_to_db, verify_domain_in_db, delete_domain_from_db)
 import user_agents
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -463,6 +463,37 @@ def get_countries():
 def get_filtered_links():
     product_id = request.args.get('product_id')
     return jsonify(get_links_by_product(product_id))  # Implemente esta função no database.py
+
+@app.route('/domains')
+@login_required
+def view_domains():
+    return render_template('domains.html')
+
+@app.route('/api/domains', methods=['GET'])
+@login_required
+def get_domains():
+    domains = get_all_domains()
+    return jsonify(domains)
+
+@app.route('/api/domains', methods=['POST'])
+@login_required
+def add_domain():
+    data = request.json
+    domain = data['domain']
+    success = add_domain_to_db(domain)
+    return jsonify({'success': success, 'cname': request.host})
+
+@app.route('/api/domains/<domain>/verify', methods=['POST'])
+@login_required
+def verify_domain(domain):
+    success = verify_domain_in_db(domain)
+    return jsonify({'success': success})
+
+@app.route('/api/domains/<domain>', methods=['DELETE'])
+@login_required
+def delete_domain(domain):
+    success = delete_domain_from_db(domain)
+    return jsonify({'success': success})
 
 def init_admin_user():
     try:

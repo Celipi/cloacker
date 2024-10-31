@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domínios - UCloak</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .sidebar-link:hover .material-icons { color: #4A5568; }
+    </style>
+</head>
+<body class="bg-gray-100 flex font-sans">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-lg h-screen fixed left-0 top-0">
+        <div class="p-6 border-b">
+            <h2 class="text-2xl font-bold text-gray-800">UCloak</h2>
+        </div>
+        <nav class="flex flex-col p-4 space-y-3">
+            <a href="{{ url_for('admin_panel') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">dashboard</span>
+                <span class="ml-3">Dashboard</span>
+            </a>
+            <a href="{{ url_for('view_links') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">link</span>
+                <span class="ml-3">Links Criados</span>
+            </a>
+            <a href="{{ url_for('ab_test_page') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">compare_arrows</span>
+                <span class="ml-3">Teste A/B</span>
+            </a>
+            <a href="{{ url_for('view_products') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">format_list_bulleted_add</span>
+                <span class="ml-3">Produtos</span>
+            </a>
+            <a href="{{ url_for('view_domains') }}" class="sidebar-link flex items-center p-3 text-gray-800 bg-gray-200 rounded-lg">
+                <span class="material-icons text-gray-400">language</span>
+                <span class="ml-3">Domínios</span>
+            </a>
+            <a href="{{ url_for('view_logs') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">history</span>
+                <span class="ml-3">Logs</span>
+            </a>
+            <a href="{{ url_for('view_users') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-600">people</span>
+                <span class="ml-3">Usuários</span>
+            </a>
+            <a href="https://docs.ucloak.com" target="_blank" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">library_books</span>
+                <span class="ml-3">Documentação</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="sidebar-link flex items-center p-3 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <span class="material-icons text-gray-400">logout</span>
+                <span class="ml-3">Logout</span>
+            </a>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="ml-64 flex-1 p-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Domínios</h1>
+            <button class="bg-black text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200" onclick="openAddDomainModal()">+ Adicionar Domínio</button>
+        </div>
+
+        <!-- Domains Table -->
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domínio</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="domainsTableBody">
+                    <!-- Domains will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Modal for adding domain -->
+    <div id="addDomainModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Adicionar Domínio</h2>
+                <button onclick="closeAddDomainModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <form id="addDomainForm">
+                <div class="mb-6">
+                    <label for="domain" class="block text-sm font-medium text-gray-700 mb-2">Domínio</label>
+                    <input type="text" id="domain" name="domain" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" required>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" class="px-4 py-2 text-gray-600 hover:text-gray-800" onclick="closeAddDomainModal()">Cancelar</button>
+                    <button type="submit" class="bg-black text-white px-6 py-2 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200">Adicionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for domain instructions -->
+    <div id="domainInstructionsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Instruções de Configuração</h2>
+                <button onclick="closeDomainInstructionsModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div id="domainInstructions" class="mb-6">
+                <!-- Instructions will be dynamically added here -->
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeDomainInstructionsModal()" class="bg-black text-white px-6 py-2 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-200">Entendi</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadDomains() {
+            fetch('/api/domains')
+                .then(response => response.json())
+                .then(domains => {
+                    const tableBody = document.getElementById('domainsTableBody');
+                    tableBody.innerHTML = '';
+                    domains.forEach(domain => {
+                        const row = `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">${domain.domain}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${domain.status}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    ${domain.status === 'Pendente' ? 
+                                        `<button onclick="verifyDomain('${domain.domain}')" class="text-indigo-600 hover:text-indigo-900 mr-2">Verificar</button>` : 
+                                        ''
+                                    }
+                                    <button onclick="deleteDomain('${domain.domain}')" class="text-red-600 hover:text-red-900">Excluir</button>
+                                </td>
+                            </tr>
+                        `;
+                        tableBody.innerHTML += row;
+                    });
+                });
+        }
+    
+        function openAddDomainModal() {
+            document.getElementById('addDomainModal').classList.remove('hidden');
+        }
+    
+        function closeAddDomainModal() {
+            document.getElementById('addDomainModal').classList.add('hidden');
+        }
+    
+        function openDomainInstructionsModal(domain, cname) {
+            const instructions = document.getElementById('domainInstructions');
+            instructions.innerHTML = `
+                <p>Para configurar o domínio <strong>${domain}</strong>, siga estas instruções:</p>
+                <ol class="list-decimal list-inside mt-4">
+                    <li>Acesse o painel de controle DNS do seu provedor (ex: Cloudflare, GoDaddy, Hostinger)</li>
+                    <li>Adicione um novo registro A ou CNAME com as seguintes informações:</li>
+                    <ul class="list-disc list-inside ml-6 mt-2">
+                        <li>Nome: ${domain}</li>
+                        <li>Tipo: ${cname.match(/^\d+\.\d+\.\d+\.\d+$/) ? 'A' : 'CNAME'}</li>
+                        <li>Valor: ${cname}</li>
+                        <li>TTL: Automático ou 3600</li>
+                    </ul>
+                    <li>Salve as alterações e aguarde a propagação (pode levar até 48 horas)</li>
+                    <li>Depois de configurado, volte aqui e clique em "Verificar" para ativar o domínio</li>
+                </ol>
+            `;
+            document.getElementById('domainInstructionsModal').classList.remove('hidden');
+        }
+    
+        function closeDomainInstructionsModal() {
+            document.getElementById('domainInstructionsModal').classList.add('hidden');
+        }
+    
+        document.getElementById('addDomainForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const domain = document.getElementById('domain').value;
+            fetch('/api/domains', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ domain }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        closeAddDomainModal();
+                        openDomainInstructionsModal(domain, data.cname);
+                        loadDomains();
+                    } else {
+                        alert('Erro ao adicionar domínio');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro ao adicionar domínio');
+                });
+        });
+    
+        function verifyDomain(domain) {
+            fetch(`/api/domains/${domain}/verify`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Domínio verificado com sucesso!');
+                        loadDomains();
+                    } else {
+                        alert('Falha na verificação do domínio. Tente novamente mais tarde.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro ao verificar domínio');
+                });
+        }
+    
+        function deleteDomain(domain) {
+            if (confirm('Tem certeza que deseja excluir este domínio?')) {
+                fetch(`/api/domains/${domain}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            loadDomains();
+                            alert('Domínio excluído com sucesso');
+                        } else {
+                            alert('Erro ao excluir domínio');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Erro ao excluir domínio');
+                    });
+            }
+        }
+    
+        loadDomains();
+    </script>
+</body>
+</html>

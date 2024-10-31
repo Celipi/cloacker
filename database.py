@@ -8,6 +8,7 @@ from pytz import timezone
 import random
 import string
 import bcrypt
+import socket
 
 DB_USER = os.getenv('POSTGRES_USER', 'postgres')
 DB_PASSWORD = os.getenv('POSTGRES_PASSWORD')
@@ -95,6 +96,14 @@ def init_db():
             url TEXT NOT NULL,
             visits INTEGER DEFAULT 0,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS domains (
+            id SERIAL PRIMARY KEY,
+            domain TEXT UNIQUE NOT NULL,
+            status TEXT NOT NULL
         )
     """)
     
@@ -796,3 +805,62 @@ def delete_ab_test(test_id):
     finally:
         cur.close()
         conn.close()
+
+def get_all_domains():
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    cur.execute("SELECT domain, status FROM domains")
+    domains = [{'domain': domain, 'status': status} for domain, status in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return domains
+
+def add_domain_to_db(domain):
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    try:
+        cur.execute("INSERT INTO domains (domain, status) VALUES (%s, 'Pendente')", (domain,))
+        conn.commit()
+        success = True
+    except Exception as e:
+        print(f"Error adding domain: {e}")
+        conn.rollback()
+        success = False
+    finally:
+        cur.close()
+        conn.close()
+    return success
+
+def verify_domain_in_db(domain):
+    # Aqui você deve implementar a lógica real de verificação do domínio
+    # Por enquanto, vamos apenas atualizar o status para 'Ativo'
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    try:
+        cur.execute("UPDATE domains SET status = 'Ativo' WHERE domain = %s", (domain,))
+        conn.commit()
+        success = True
+    except Exception as e:
+        print(f"Error verifying domain: {e}")
+        conn.rollback()
+        success = False
+    finally:
+        cur.close()
+        conn.close()
+    return success
+
+def delete_domain_from_db(domain):
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    try:
+        cur.execute("DELETE FROM domains WHERE domain = %s", (domain,))
+        conn.commit()
+        success = True
+    except Exception as e:
+        print(f"Error deleting domain: {e}")
+        conn.rollback()
+        success = False
+    finally:
+        cur.close()
+        conn.close()
+    return success
