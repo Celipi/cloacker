@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.0 
+    image: traefik:v3.0
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
@@ -13,10 +13,10 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
-      - "443:443" 
+      - "443:443"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro 
-      - ./letsencrypt:/letsencrypt 
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
     networks:
       - traefik_proxy
 
@@ -27,19 +27,19 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Extreme123
     healthcheck:
-         test: ["CMD-SHELL", "pg_isready -U postgres"]
-         interval: 5s
-         timeout: 5s
-         retries: 5
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432" 
+      - "5432:5432"
     networks:
       - traefik_proxy
 
   web:
-    build: .
+    image: ghcr.io/celipi/cloacker:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web.rule=Host(`seu_dominio.com`)"
@@ -48,7 +48,7 @@ services:
       - "traefik.http.routers.web.tls.certresolver=letsencrypt"
       - "traefik.http.services.web.loadbalancer.server.port=3000"
     environment:
-       DATABASE_URL: postgresql://postgres:Extreme123@db:5432/cloacker
+      DATABASE_URL: postgresql://postgres:Extreme123@db:5432/cloacker
     depends_on:
       db:
         condition: service_healthy

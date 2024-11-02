@@ -5,5 +5,4 @@ user-agents
 bcrypt
 apscheduler
 pytz
-dnspython
 requests

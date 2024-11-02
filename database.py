@@ -1,4 +1,4 @@
-# database
+# database.py
 import os
 import psycopg2
 from psycopg2 import sql
@@ -8,8 +8,6 @@ from pytz import timezone
 import random
 import string
 import bcrypt
-import socket
-import dns.resolver
 
 DB_USER = os.getenv('POSTGRES_USER', 'postgres')
 DB_PASSWORD = os.getenv('POSTGRES_PASSWORD', 'Extreme123')
@@ -27,7 +25,7 @@ def generate_access_code():
 def init_db():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
-    
+
     # Criar tabela de produtos
     cur.execute("""
         CREATE TABLE IF NOT EXISTS products (
@@ -35,7 +33,7 @@ def init_db():
             name TEXT NOT NULL
         )
     """)
-    
+
     # Criar tabela de links
     cur.execute("""
         CREATE TABLE IF NOT EXISTS links (
@@ -48,7 +46,7 @@ def init_db():
             access_code TEXT NOT NULL
         )
     """)
-    
+
     # Criar tabela de logs de tráfego
     cur.execute("""
         CREATE TABLE IF NOT EXISTS traffic_logs (
@@ -62,7 +60,7 @@ def init_db():
             timestamp TIMESTAMPTZ NOT NULL
         )
     """)
-    
+
     # Adicionar coluna product_id à tabela links
     cur.execute("""
         ALTER TABLE links
@@ -89,7 +87,7 @@ def init_db():
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
     """)
-    
+
     cur.execute("""
         CREATE TABLE IF NOT EXISTS ab_test_urls (
             id SERIAL PRIMARY KEY,
@@ -100,14 +98,6 @@ def init_db():
         )
     """)
 
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS domains (
-            id SERIAL PRIMARY KEY,
-            domain TEXT UNIQUE NOT NULL,
-            status TEXT NOT NULL
-        )
-    """)
-    
     conn.commit()
     cur.close()
     conn.close()
@@ -130,11 +120,11 @@ def create_login_table():
 def add_traffic_log(short_id, ip_address, user_agent, country_code, device_type, passed_filter):
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
-    
+
     # Usar timezone São Paulo
     sp_timezone = timezone('America/Sao_Paulo')
     current_time = datetime.now(sp_timezone)
-    
+
     cur.execute(
         "INSERT INTO traffic_logs (short_id, ip_address, user_agent, country_code, device_type, passed_filter, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s)",
         (short_id, ip_address, user_agent, country_code, device_type, passed_filter, current_time)
@@ -147,23 +137,23 @@ def get_traffic_logs(limit=100):
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     cur.execute("""
-        SELECT 
-            id, 
-            short_id, 
-            ip_address, 
-            user_agent, 
-            country_code, 
-            device_type, 
-            passed_filter, 
+        SELECT
+            id,
+            short_id,
+            ip_address,
+            user_agent,
+            country_code,
+            device_type,
+            passed_filter,
             timestamp AT TIME ZONE 'America/Sao_Paulo' as timestamp
-        FROM traffic_logs 
-        ORDER BY timestamp DESC 
+        FROM traffic_logs
+        ORDER BY timestamp DESC
         LIMIT %s
     """, (limit,))
     logs = cur.fetchall()
     cur.close()
     conn.close()
-    
+
     # Formatar o timestamp diretamente aqui
     return [
         {
@@ -235,8 +225,8 @@ def get_all_links_with_products():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     cur.execute("""
-        SELECT l.*, p.name as product_name 
-        FROM links l 
+        SELECT l.*, p.name as product_name
+        FROM links l
         LEFT JOIN products p ON l.product_id = p.id
     """)
     links = cur.fetchall()
@@ -292,30 +282,30 @@ def get_filtered_accesses(filters=None, passed_filter=None):
                 conditions.append("timestamp >= %s::timestamptz")
                 start_date = f"{filters['start_date']} 00:00:00 America/Sao_Paulo"
                 params.append(start_date)
-            
+
             if filters.get('end_date'):
                 conditions.append("timestamp <= %s::timestamptz")
                 end_date = f"{filters['end_date']} 23:59:59 America/Sao_Paulo"
                 params.append(end_date)
-            
+
             if filters.get('product_id'):
                 conditions.append("""
                     short_id IN (
-                        SELECT short_id 
-                        FROM links 
+                        SELECT short_id
+                        FROM links
                         WHERE product_id = %s
                     )
                 """)
                 params.append(filters['product_id'])
-            
+
             if filters.get('short_id'):
                 conditions.append("short_id = %s")
                 params.append(filters['short_id'])
-            
+
             if filters.get('country'):
                 conditions.append("country_code = %s")
                 params.append(filters['country'])
-            
+
             if filters.get('device'):
                 conditions.append("device_type = %s")
                 params.append(filters['device'])
@@ -337,7 +327,7 @@ def get_hourly_accesses(filters=None):
     cur = conn.cursor()
     try:
         query = """
-            SELECT 
+            SELECT
                 date_trunc('hour', timestamp AT TIME ZONE 'America/Sao_Paulo') as hour,
                 COUNT(*) as count
             FROM traffic_logs
@@ -350,30 +340,30 @@ def get_hourly_accesses(filters=None):
                 conditions.append("timestamp >= %s::timestamptz")
                 start_date = f"{filters['start_date']} 00:00:00 America/Sao_Paulo"
                 params.append(start_date)
-            
+
             if filters.get('end_date'):
                 conditions.append("timestamp <= %s::timestamptz")
                 end_date = f"{filters['end_date']} 23:59:59 America/Sao_Paulo"
                 params.append(end_date)
-            
+
             if filters.get('product_id'):
                 conditions.append("""
                     short_id IN (
-                        SELECT short_id 
-                        FROM links 
+                        SELECT short_id
+                        FROM links
                         WHERE product_id = %s
                     )
                 """)
                 params.append(filters['product_id'])
-            
+
             if filters.get('short_id'):
                 conditions.append("short_id = %s")
                 params.append(filters['short_id'])
-            
+
             if filters.get('country'):
                 conditions.append("country_code = %s")
                 params.append(filters['country'])
-            
+
             if filters.get('device'):
                 conditions.append("device_type = %s")
                 params.append(filters['device'])
@@ -388,7 +378,7 @@ def get_hourly_accesses(filters=None):
 
         cur.execute(query, params)
         results = cur.fetchall()
-        
+
         return [
             {
                 'hour': result[0].strftime('%Y-%m-%d %H:00'),
@@ -581,17 +571,17 @@ def delete_user(user_id):
 def clear_old_logs():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
-    
+
     sp_timezone = timezone('America/Sao_Paulo')
     thirty_days_ago = datetime.now(sp_timezone) - timedelta(days=30)
-    
+
     cur.execute("DELETE FROM traffic_logs WHERE timestamp < %s", (thirty_days_ago,))
-    
+
     deleted_count = cur.rowcount
     conn.commit()
     cur.close()
     conn.close()
-    
+
     return deleted_count
 
 def get_unique_countries():
@@ -599,8 +589,8 @@ def get_unique_countries():
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT DISTINCT country_code 
-            FROM traffic_logs 
+            SELECT DISTINCT country_code
+            FROM traffic_logs
             WHERE country_code IS NOT NULL
             ORDER BY country_code
         """)
@@ -641,7 +631,7 @@ def get_links_by_product(product_id=None):
                 FROM links l
                 LEFT JOIN products p ON l.product_id = p.id
             """)
-        
+
         links = cur.fetchall()
         return [
             {
@@ -664,14 +654,14 @@ def create_ab_test(name, device_filter, country_filter, urls, safe_url):
     try:
         test_id = shortuuid.uuid()[:8]
         access_code = generate_access_code()
-        
+
         # Criar o teste (adicionado safe_url)
         cur.execute("""
             INSERT INTO ab_tests (test_id, name, device_filter, country_filter, access_code, safe_url)
             VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING test_id
         """, (test_id, name, device_filter, country_filter, access_code, safe_url))
-        
+
         # Adicionar URLs
         for url in urls:
             if url.strip():  # Verificar se a URL não está vazia
@@ -679,7 +669,7 @@ def create_ab_test(name, device_filter, country_filter, urls, safe_url):
                     INSERT INTO ab_test_urls (test_id, url, visits)
                     VALUES (%s, %s, 0)
                 """, (test_id, url))
-        
+
         conn.commit()
         return test_id, access_code
     except Exception as e:
@@ -695,21 +685,21 @@ def get_ab_test(test_id):
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT test_id, name, device_filter, country_filter, access_code, safe_url 
-            FROM ab_tests 
+            SELECT test_id, name, device_filter, country_filter, access_code, safe_url
+            FROM ab_tests
             WHERE test_id = %s
         """, (test_id,))
         test = cur.fetchone()
-        
+
         if test:
             cur.execute("""
-                SELECT url, visits 
-                FROM ab_test_urls 
+                SELECT url, visits
+                FROM ab_test_urls
                 WHERE test_id = %s
                 ORDER BY id
             """, (test_id,))
             urls = cur.fetchall()
-            
+
             return {
                 'test_id': test[0],
                 'name': test[1],
@@ -729,7 +719,7 @@ def increment_ab_test_visit(test_id, url):
     cur = conn.cursor()
     try:
         cur.execute("""
-            UPDATE ab_test_urls 
+            UPDATE ab_test_urls
             SET visits = visits + 1
             WHERE test_id = %s AND url = %s
         """, (test_id, url))
@@ -746,22 +736,22 @@ def get_all_ab_tests():
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT test_id, name, device_filter, country_filter, access_code, safe_url 
-            FROM ab_tests 
+            SELECT test_id, name, device_filter, country_filter, access_code, safe_url
+            FROM ab_tests
             ORDER BY created_at DESC
         """)
         tests = cur.fetchall()
-        
+
         result = []
         for test in tests:
             cur.execute("""
-                SELECT url, visits 
-                FROM ab_test_urls 
+                SELECT url, visits
+                FROM ab_test_urls
                 WHERE test_id = %s
                 ORDER BY id
             """, (test[0],))
             urls = cur.fetchall()
-            
+
             total_visits = sum(url[1] for url in urls)
             urls_with_stats = [
                 {
@@ -771,7 +761,7 @@ def get_all_ab_tests():
                 }
                 for url in urls
             ]
-            
+
             result.append({
                 'test_id': test[0],
                 'name': test[1],
@@ -781,7 +771,7 @@ def get_all_ab_tests():
                 'safe_url': test[5],  # Adicionado safe_url
                 'urls': urls_with_stats
             })
-        
+
         return result
     finally:
         cur.close()
@@ -795,7 +785,7 @@ def delete_ab_test(test_id):
         cur.execute("DELETE FROM ab_test_urls WHERE test_id = %s", (test_id,))
         # Depois deletar o teste
         cur.execute("DELETE FROM ab_tests WHERE test_id = %s", (test_id,))
-        
+
         success = cur.rowcount > 0
         conn.commit()
         return success
@@ -806,80 +796,3 @@ def delete_ab_test(test_id):
     finally:
         cur.close()
         conn.close()
-
-def get_all_domains():
-    conn = psycopg2.connect(DATABASE_URL)
-    cur = conn.cursor()
-    cur.execute("SELECT domain, status FROM domains")
-    domains = [{'domain': domain, 'status': status} for domain, status in cur.fetchall()]
-    cur.close()
-    conn.close()
-    return domains
-
-def add_domain_to_db(domain):
-    conn = psycopg2.connect(DATABASE_URL)
-    cur = conn.cursor()
-    try:
-        cur.execute("INSERT INTO domains (domain, status) VALUES (%s, 'Pendente')", (domain,))
-        conn.commit()
-        success = True
-    except Exception as e:
-        print(f"Error adding domain: {e}")
-        conn.rollback()
-        success = False
-    finally:
-        cur.close()
-        conn.close()
-    return success
-
-def verify_domain_in_db(domain):
-    # Aqui você deve implementar a lógica real de verificação do domínio
-    # Por enquanto, vamos apenas atualizar o status para 'Ativo'
-    conn = psycopg2.connect(DATABASE_URL)
-    cur = conn.cursor()
-    try:
-        cur.execute("UPDATE domains SET status = 'Ativo' WHERE domain = %s", (domain,))
-        conn.commit()
-        success = True
-    except Exception as e:
-        print(f"Error verifying domain: {e}")
-        conn.rollback()
-        success = False
-    finally:
-        cur.close()
-        conn.close()
-    return success
-
-def delete_domain_from_db(domain):
-    conn = psycopg2.connect(DATABASE_URL)
-    cur = conn.cursor()
-    try:
-        cur.execute("DELETE FROM domains WHERE domain = %s", (domain,))
-        conn.commit()
-        success = True
-    except Exception as e:
-        print(f"Error deleting domain: {e}")
-        conn.rollback()
-        success = False
-    finally:
-        cur.close()
-        conn.close()
-    return success
-
-def verify_domain_pointing(domain, expected_ip_or_domain):
-    try:
-        # Tenta resolver o CNAME
-        answers = dns.resolver.resolve(domain, 'CNAME')
-        for rdata in answers:
-            if str(rdata.target).rstrip('.') == expected_ip_or_domain:
-                return True
-        
-        # Se não for CNAME, tenta resolver o A record
-        answers = dns.resolver.resolve(domain, 'A')
-        for rdata in answers:
-            if rdata.address == expected_ip_or_domain:
-                return True
-        
-        return False
-    except:
-        return False
