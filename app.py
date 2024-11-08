@@ -178,7 +178,7 @@ def redirect_link(short_id):
     if ab_test:
         # Se o user-agent for do Facebook, redirecionar para a safe_url
         if facebook_ua in user_agent:
-            return render_template('block.html', safe_url=link['safe_url'])
+            return render_template('block.html', safe_url=ab_test['safe_url'])
 
         # Verificar se o cookie existe para teste A/B
         cookie_name = f'cloakopen_ab_{short_id}'
@@ -272,7 +272,7 @@ def redirect_link(short_id):
         passed_filter = False
 
     # Verificar filtro de país
-    if link['country_filter'] != 'all' and country_code == link['country_filter']:
+    if link['country_filter'] != 'all' and country_code != link['country_filter']:
         passed_filter = False
 
     # Verificar código de acesso
@@ -515,10 +515,6 @@ def init_admin_user():
     except Exception as e:
         print(f"Erro ao criar usuário admin: {e}")
         raise  # Propaga o erro para poder ser visto
-
-@app.route('/up')
-def health_check():
-    return "OK", 200
 
 # Configurar o agendador para limpar logs diariamente
 scheduler = BackgroundScheduler(timezone=timezone('America/Sao_Paulo'))
