@@ -169,9 +169,17 @@ def redirect_link(short_id):
     original_params = {k: v for k, v in request.args.items() if k != 'access_code'}
     access_code = request.args.get('access_code')
 
+    # Verificar o user-agent do Facebook
+    user_agent = request.headers.get('User-Agent', '')
+    facebook_ua = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
+
     # Primeiro, tentar encontrar um teste A/B
     ab_test = get_ab_test(short_id)
     if ab_test:
+        # Se o user-agent for do Facebook, redirecionar para a safe_url
+        if facebook_ua in user_agent:
+            return render_template('block.html', safe_url=link['safe_url'])
+
         # Verificar se o cookie existe para teste A/B
         cookie_name = f'cloakopen_ab_{short_id}'
         if request.cookies.get(cookie_name) == 'true':
@@ -235,6 +243,10 @@ def redirect_link(short_id):
     link = get_link(short_id)
     if not link:
         abort(404)  # Link não encontrado
+
+    # Se o user-agent for do Facebook, redirecionar para a safe_url
+    if facebook_ua in user_agent:
+        return render_template('block.html', safe_url=link['safe_url'])
 
     # Verificar se o cookie existe para link normal
     cookie_name = f'cloakopen_{short_id}'
